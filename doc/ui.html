@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>lemeone-lab | Terminal Startup Simulator</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#ffffff",
+                        secondary: "#a1a1aa",
+                        "background-light": "#ffffff",
+                        "background-dark": "#0a0a0a",
+                        "panel-light": "#f4f4f5",
+                        "panel-dark": "#18181b",
+                        "border-light": "#e4e4e7",
+                        "border-dark": "#27272a",
+                    },
+                    fontFamily: {
+                        display: ["'Space Grotesk'", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "4px",
+                    },
+                    boxShadow: {
+                        'neon': '0 0 10px rgba(255, 255, 255, 0.1)',
+                        'neon-strong': '0 0 20px rgba(255, 255, 255, 0.2)',
+                    }
+                },
+            },
+        };
+    </script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#00ffcc",
+                        "background-light": "#f4f7f6",
+                        "background-dark": "#0a0f14",
+                        "panel-light": "#ffffff",
+                        "panel-dark": "#111820",
+                        "border-light": "#e2e8f0",
+                        "border-dark": "#1a2a32",
+                    },
+                    fontFamily: {
+                        display: ["'JetBrains Mono'", "monospace"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "4px",
+                    },
+                    boxShadow: {
+                        'neon': '0 0 10px rgba(0, 255, 204, 0.2), inset 0 0 10px rgba(0, 255, 204, 0.05)',
+                        'neon-strong': '0 0 20px rgba(0, 255, 204, 0.4), inset 0 0 10px rgba(0, 255, 204, 0.1)',
+                    }
+                },
+            },
+        };
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
+
+        .cursor-blink {
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        .dark .scanlines {
+            position: relative;
+        }
+
+        .dark .scanlines::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.02));
+            z-index: 50;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            opacity: 0.2;
+        }
+    </style>
+</head>
+
+<body
+    class="font-display bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 min-h-screen transition-colors duration-300 scanlines">
+    <div
+        class="border-b border-border-light dark:border-primary/20 bg-panel-light dark:bg-panel-dark text-xs py-2 px-4 flex justify-between items-center text-slate-500 dark:text-primary/70">
+        <div class="flex gap-6">
+            <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                SYS_ONLINE</span>
+            <span class="hidden sm:inline">LATENCY: 12ms</span>
+            <span class="hidden md:inline">ENCRYPTION: AES-256</span>
+        </div>
+        <div class="flex gap-6">
+            <a class="hover:text-primary transition-colors" href="#">DOCS</a>
+            <a class="hover:text-primary transition-colors" href="#">COMMUNITY</a>
+            <button class="hover:text-primary transition-colors flex items-center gap-1" id="theme-toggle">
+                <span class="material-symbols-outlined text-[16px]">contrast</span> MODE
+            </button>
+        </div>
+    </div>
+    <header
+        class="border-b border-border-light dark:border-primary/30 bg-panel-light/80 dark:bg-panel-dark/80 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-3xl text-slate-800 dark:text-primary">terminal</span>
+                <span class="text-xl font-bold tracking-tight">LEMEONE<span
+                        class="text-slate-400 dark:text-primary/50">_LAB</span></span>
+            </div>
+            <div
+                class="hidden md:flex items-center bg-background-light dark:bg-background-dark border border-border-light dark:border-primary/30 rounded px-3 py-1.5 w-96">
+                <span class="text-slate-400 dark:text-primary/50 mr-2">&gt;</span>
+                <input
+                    class="bg-transparent border-none focus:ring-0 p-0 text-sm w-full text-slate-800 dark:text-primary placeholder-slate-400 dark:placeholder-primary/30 font-display"
+                    placeholder="execute search_query..." type="text" />
+            </div>
+            <div class="flex items-center gap-4">
+                <a class="text-sm hover:text-primary transition-colors hidden sm:block" href="#">STATUS</a>
+                <a class="text-sm bg-slate-800 dark:bg-primary/10 text-white dark:text-primary border border-transparent dark:border-primary/50 px-4 py-1.5 rounded hover:bg-slate-700 dark:hover:bg-primary/20 transition-all shadow-[0_2px_4px_rgba(0,0,0,0.1)] dark:shadow-neon"
+                    href="#">
+                    [ AUTH ]
+                </a>
+            </div>
+        </div>
+    </header>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <section
+            class="bg-panel-light dark:bg-black rounded border border-border-light dark:border-primary/40 shadow-sm dark:shadow-neon overflow-hidden">
+            <div
+                class="bg-slate-100 dark:bg-[#1a1f26] border-b border-border-light dark:border-primary/40 px-4 py-2 flex items-center gap-2">
+                <div class="flex gap-1.5">
+                    <div class="w-3 h-3 rounded-full bg-red-500/80 dark:bg-red-500/50"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500/80 dark:bg-yellow-500/50"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500/80 dark:bg-green-500/50"></div>
+                </div>
+                <div class="mx-auto text-xs text-slate-500 dark:text-primary/50">root@lemeone-lab:~</div>
+            </div>
+            <div class="p-6 md:p-10 font-display text-sm md:text-base bg-white dark:bg-black">
+                <div class="mb-6">
+                    <p class="text-slate-500 dark:text-primary/70 mb-2">Welcome to lemeone-lab OS v1.0.4.</p>
+                    <p class="text-slate-500 dark:text-primary/70 mb-4">Establishing secure connection to simulation
+                        engine... <span class="dark:text-primary text-slate-200">OK</span></p>
+                    <div class="flex items-start gap-2 mb-2">
+                        <span class="text-slate-400 dark:text-primary/50">root@cortex:~$</span>
+                        <span class="text-slate-800 dark:text-white font-bold">init-team --name "NeuralNet_Inc"
+                            --difficulty hard</span>
+                    </div>
+                    <div
+                        class="pl-4 border-l-2 border-slate-200 dark:border-primary/20 space-y-1 text-slate-600 dark:text-primary/80 my-4">
+                        <p>&gt; Initializing core business loop...</p>
+                        <p>&gt; Allocating starting capital: <span class="text-slate-200 font-normal">$10,000</span></p>
+                        <p>&gt; Generating initial market conditions...</p>
+                        <p class="dark:text-primary mt-2 text-slate-200">&gt; SYNC COMPLETE. Simulation ready.</p>
+                    </div>
+                    <div
+                        class="mt-8 flex flex-col sm:flex-row items-center justify-between bg-slate-50 dark:bg-primary/5 border border-border-light dark:border-primary/20 p-6 rounded">
+                        <div>
+                            <h1 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">lemeone-lab: Startup
+                                Simulator</h1>
+                            <p class="text-slate-600 dark:text-primary/70 max-w-xl">
+                                Navigate the ruthless world of tech startups via terminal. Manage resources, build your
+                                moat, and outsmart rival AIs in a harsh, roguelike business environment.
+                            </p>
+                        </div>
+                        <div class="mt-6 sm:mt-0">
+                            <button
+                                class="bg-white text-black font-bold px-6 py-3 rounded shadow-lg dark:shadow-neon-strong hover:bg-slate-200 transition-all flex items-center gap-2">EXECUTE_RUN
+                                <span class="material-symbols-outlined">play_arrow</span></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-slate-400 dark:text-primary/50">root@cortex:~$</span>
+                    <span class="w-2.5 h-5 bg-slate-400 dark:bg-primary cursor-blink inline-block"></span>
+                </div>
+            </div>
+        </section>
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div
+                class="bg-panel-light dark:bg-panel-dark border border-border-light dark:border-primary/30 p-6 rounded relative overflow-hidden group hover:border-slate-400 dark:hover:border-primary transition-colors shadow-sm dark:shadow-none">
+                <div class="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <span
+                        class="material-symbols-outlined text-6xl text-slate-800 dark:text-primary">account_balance_wallet</span>
+                </div>
+                <div
+                    class="flex items-center gap-2 text-sm text-slate-500 dark:text-primary/60 mb-4 uppercase tracking-wider">
+                    <span class="material-symbols-outlined text-[18px]">payments</span>
+                    Sys_Variable: Cash
+                </div>
+                <div class="text-3xl font-bold text-slate-800 dark:text-white mb-1">$245,000 <span
+                        class="text-sm dark:text-primary font-normal text-slate-200">+12%</span></div>
+                <div
+                    class="w-full bg-slate-100 dark:bg-black rounded-full h-1.5 mt-4 border border-border-light dark:border-primary/20">
+                    <div class="bg-white h-1.5 rounded-full" style="width: 45%"></div>
+                </div>
+                <div class="text-xs text-slate-400 dark:text-primary/40 mt-2 text-right">BURN RATE: $12K/mo</div>
+            </div>
+            <div
+                class="bg-panel-light dark:bg-panel-dark border border-border-light dark:border-primary/30 p-6 rounded relative overflow-hidden group hover:border-slate-400 dark:hover:border-primary transition-colors shadow-sm dark:shadow-none">
+                <div class="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <span class="material-symbols-outlined text-6xl text-slate-800 dark:text-primary">security</span>
+                </div>
+                <div
+                    class="flex items-center gap-2 text-sm text-slate-500 dark:text-primary/60 mb-4 uppercase tracking-wider">
+                    <span class="material-symbols-outlined text-[18px]">shield</span>
+                    Sys_Variable: Moat
+                </div>
+                <div class="text-3xl font-bold text-slate-800 dark:text-white mb-1">LVL 4 <span
+                        class="text-sm text-slate-400 dark:text-primary/60 font-normal">/ 10</span></div>
+                <div
+                    class="w-full bg-slate-100 dark:bg-black rounded-full h-1.5 mt-4 border border-border-light dark:border-primary/20 flex gap-1 p-0.5">
+                    <div class="bg-slate-300 h-1 rounded-sm flex-1"></div>
+                    <div class="bg-slate-300 h-1 rounded-sm flex-1"></div>
+                    <div class="bg-slate-300 h-1 rounded-sm flex-1"></div>
+                    <div class="bg-slate-300 h-1 rounded-sm flex-1"></div>
+                    <div class="bg-slate-200 dark:bg-primary/10 h-1 rounded-sm flex-1"></div>
+                    <div class="bg-slate-200 dark:bg-primary/10 h-1 rounded-sm flex-1"></div>
+                </div>
+                <div class="text-xs text-slate-400 dark:text-primary/40 mt-2 text-right">DEFENSE RATING: STABLE</div>
+            </div>
+            <div
+                class="bg-panel-light dark:bg-panel-dark border border-border-light dark:border-primary/30 p-6 rounded relative overflow-hidden group hover:border-slate-400 dark:hover:border-primary transition-colors shadow-sm dark:shadow-none">
+                <div class="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <span class="material-symbols-outlined text-6xl text-slate-800 dark:text-primary">speed</span>
+                </div>
+                <div
+                    class="flex items-center gap-2 text-sm text-slate-500 dark:text-primary/60 mb-4 uppercase tracking-wider">
+                    <span class="material-symbols-outlined text-[18px]">memory</span>
+                    Sys_Variable: Bandwidth
+                </div>
+                <div class="text-3xl font-bold text-slate-800 dark:text-white mb-1">85% <span
+                        class="text-slate-200 font-normal">HIGH</span></div>
+                <div
+                    class="w-full bg-slate-100 dark:bg-black rounded-full h-1.5 mt-4 border border-border-light dark:border-primary/20">
+                    <div class="bg-slate-200 h-1.5 rounded-full" style="width: 85%"></div>
+                </div>
+                <div class="text-xs text-slate-400 dark:text-primary/40 mt-2 text-right">CAPACITY WARNING</div>
+            </div>
+        </section>
+        <section
+            class="bg-panel-light dark:bg-panel-dark border border-border-light dark:border-primary/30 p-8 rounded shadow-sm dark:shadow-none">
+            <h2
+                class="text-xl font-bold text-slate-800 dark:text-white mb-6 border-b border-border-light dark:border-primary/20 pb-4 flex items-center gap-2">
+                <span class="text-white">&gt;</span> CORE_MECHANICS.md
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="space-y-3">
+                    <div
+                        class="w-10 h-10 rounded bg-slate-100 dark:bg-primary/10 border border-slate-200 dark:border-primary/30 flex items-center justify-center text-slate-600 dark:text-primary">
+                        <span class="material-symbols-outlined">track_changes</span>
+                    </div>
+                    <h3 class="font-bold text-slate-800 dark:text-white">Intention Driven</h3>
+                    <p class="text-sm text-slate-600 dark:text-primary/70">
+                        Input high-level strategic commands. The system translates your intent into operational tasks.
+                        Micromanagement is obsolete; focus on the grand vision.
+                    </p>
+                    <div class="flex flex-wrap gap-2 mt-2">
+                        <span
+                            class="text-xs px-2 py-1 bg-slate-100 dark:bg-black border border-border-light dark:border-primary/20 rounded text-slate-500 dark:text-primary/60">#strategy</span>
+                        <span
+                            class="text-xs px-2 py-1 bg-slate-100 dark:bg-black border border-border-light dark:border-primary/20 rounded text-slate-500 dark:text-primary/60">#nlp</span>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <div
+                        class="w-10 h-10 rounded bg-slate-100 dark:bg-primary/10 border border-slate-200 dark:border-primary/30 flex items-center justify-center text-slate-600 dark:text-primary">
+                        <span class="material-symbols-outlined">hourglass_empty</span>
+                    </div>
+                    <h3 class="font-bold text-slate-800 dark:text-white">Resource Constraints</h3>
+                    <p class="text-sm text-slate-600 dark:text-primary/70">
+                        Every execution consumes cycles, cash, and team sanity. Optimize your burn rate. Failing to
+                        balance constraints leads to immediate system termination (bankruptcy).
+                    </p>
+                    <div class="flex flex-wrap gap-2 mt-2">
+                        <span
+                            class="text-xs px-2 py-1 bg-slate-100 dark:bg-black border border-border-light dark:border-primary/20 rounded text-slate-500 dark:text-primary/60">#management</span>
+                        <span
+                            class="text-xs px-2 py-1 bg-slate-100 dark:bg-black border border-border-light dark:border-primary/20 rounded text-slate-500 dark:text-primary/60">#survival</span>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <div
+                        class="w-10 h-10 rounded bg-slate-100 dark:bg-primary/10 border border-slate-200 dark:border-primary/30 flex items-center justify-center text-slate-600 dark:text-primary">
+                        <span class="material-symbols-outlined">restart_alt</span>
+                    </div>
+                    <h3 class="font-bold text-slate-800 dark:text-white">Roguelike Simulation</h3>
+                    <p class="text-sm text-slate-600 dark:text-primary/70">
+                        Market conditions shift unpredictably. Permadeath is enforced. Extract knowledge from failed
+                        runs to build stronger foundations in the next iteration.
+                    </p>
+                    <div class="flex flex-wrap gap-2 mt-2">
+                        <span
+                            class="text-xs px-2 py-1 bg-slate-100 dark:bg-black border border-border-light dark:border-primary/20 rounded text-slate-500 dark:text-primary/60">#permadeath</span>
+                        <span
+                            class="text-xs px-2 py-1 bg-slate-100 dark:bg-black border border-border-light dark:border-primary/20 rounded text-slate-500 dark:text-primary/60">#replayable</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section
+            class="bg-panel-light dark:bg-panel-dark border border-border-light dark:border-primary/30 rounded shadow-sm dark:shadow-none overflow-hidden">
+            <div
+                class="bg-slate-50 dark:bg-[#151e28] border-b border-border-light dark:border-primary/30 p-4 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-slate-500 dark:text-primary/70">list_alt</span>
+                    GLOBAL_LEADERBOARD.sql
+                </h2>
+                <span class="text-xs text-slate-400 dark:text-primary/50">STATUS: DECRYPTED</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead
+                        class="text-xs text-slate-500 dark:text-primary/60 uppercase bg-slate-50 dark:bg-[#151e28] border-b border-border-light dark:border-primary/20">
+                        <tr>
+                            <th class="px-6 py-3 font-medium" scope="col">Entity_ID</th>
+                            <th class="px-6 py-3 font-medium" scope="col">Valuation</th>
+                            <th class="px-6 py-3 font-medium" scope="col">Moat_Lvl</th>
+                            <th class="px-6 py-3 font-medium text-right" scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-primary/10">
+                        <tr class="hover:bg-slate-50 dark:hover:bg-primary/5 transition-colors">
+                            <td class="px-6 py-4 font-medium text-slate-800 dark:text-white">Nexus_Corp</td>
+                            <td class="px-6 py-4 dark:text-primary text-slate-200">$1.2B</td>
+                            <td class="px-6 py-4">9</td>
+                            <td class="px-6 py-4 text-right">
+                                <button
+                                    class="text-xs border border-border-light dark:border-primary/50 text-slate-600 dark:text-primary px-3 py-1 rounded hover:bg-slate-100 dark:hover:bg-primary/10 transition-colors">
+                                    [ VIEW_LOGS ]
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-slate-50 dark:hover:bg-primary/5 transition-colors">
+                            <td class="px-6 py-4 font-medium text-slate-800 dark:text-white">OmniTech_Systems</td>
+                            <td class="px-6 py-4 dark:text-primary text-slate-200">$850M</td>
+                            <td class="px-6 py-4">8</td>
+                            <td class="px-6 py-4 text-right">
+                                <button
+                                    class="text-xs border border-border-light dark:border-primary/50 text-slate-600 dark:text-primary px-3 py-1 rounded hover:bg-slate-100 dark:hover:bg-primary/10 transition-colors">
+                                    [ VIEW_LOGS ]
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-slate-50 dark:hover:bg-primary/5 transition-colors">
+                            <td class="px-6 py-4 font-medium text-slate-800 dark:text-white">Synthetix_Labs</td>
+                            <td class="px-6 py-4 dark:text-primary text-slate-200">$420M</td>
+                            <td class="px-6 py-4">6</td>
+                            <td class="px-6 py-4 text-right">
+                                <button
+                                    class="text-xs border border-border-light dark:border-primary/50 text-slate-600 dark:text-primary px-3 py-1 rounded hover:bg-slate-100 dark:hover:bg-primary/10 transition-colors">
+                                    [ VIEW_LOGS ]
+                                </button>
+                            </td>
+                        </tr>
+                        <tr
+                            class="hover:bg-slate-50 dark:hover:bg-primary/5 transition-colors text-slate-400 dark:text-primary/40">
+                            <td class="px-6 py-4 font-medium">DataGhost_Inc</td>
+                            <td class="px-6 py-4">$0 (BANKRUPT)</td>
+                            <td class="px-6 py-4">2</td>
+                            <td class="px-6 py-4 text-right">
+                                <span class="text-xs px-3 py-1 line-through">[ CORRUPTED ]</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div
+                class="bg-slate-50 dark:bg-[#151e28] border-t border-border-light dark:border-primary/30 p-3 text-center">
+                <a class="text-sm text-slate-600 dark:text-primary hover:underline decoration-primary/50 underline-offset-4"
+                    href="#">LOAD_MORE_RECORDS &gt;&gt;</a>
+            </div>
+        </section>
+        <section class="py-8">
+            <div class="text-center mb-8">
+                <div class="flex items-center justify-center gap-1 text-amber-500 mb-2">
+                    <span class="material-symbols-outlined text-[16px]">star</span>
+                    <span class="material-symbols-outlined text-[16px]">star</span>
+                    <span class="material-symbols-outlined text-[16px]">star</span>
+                    <span class="material-symbols-outlined text-[16px]">star</span>
+                    <span class="material-symbols-outlined text-[16px]">star</span>
+                    <span class="text-sm text-slate-500 dark:text-primary/70 ml-2 font-display">RATING: OPTIMAL</span>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 dark:text-white">User System Logs</h2>
+                <p class="text-slate-500 dark:text-primary/60 mt-2">Extracted feedback from operational nodes.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div
+                    class="bg-panel-light dark:bg-panel-dark border border-border-light dark:border-primary/20 p-6 rounded relative">
+                    <div
+                        class="absolute -top-3 left-6 bg-panel-light dark:bg-panel-dark px-2 text-xs text-slate-400 dark:text-primary/50 border border-border-light dark:border-primary/20 rounded">
+                        LOG_ID: #8932</div>
+                    <h3 class="font-bold text-blue-600 dark:text-[#00ccff] mb-3 text-sm">"Ruthless but fair mechanics"
+                    </h3>
+                    <p class="text-sm text-slate-600 dark:text-primary/80 mb-4 leading-relaxed">
+                        I've run my simulated startup into the ground 5 times now. The terminal interface is clean, but
+                        the market simulation underneath is brutal. You really feel the burn rate ticking away with
+                        every command. Highly addictive.
+                    </p>
+                    <div class="text-xs text-slate-400 dark:text-primary/40 text-right">
+                        -- User: NullPointer_ | Timestamp: 1698243...
+                    </div>
+                </div>
+                <div
+                    class="bg-panel-light dark:bg-panel-dark border border-border-light dark:border-primary/20 p-6 rounded relative scale-105 shadow-md dark:shadow-neon z-10">
+                    <div
+                        class="absolute -top-3 left-6 bg-panel-light dark:bg-panel-dark px-2 text-xs text-slate-400 dark:text-primary/50 border border-border-light dark:border-primary/20 rounded">
+                        LOG_ID: #9104</div>
+                    <h3 class="font-bold text-blue-600 dark:text-[#00ccff] mb-3 text-sm">"Best business sim out there"
+                    </h3>
+                    <p class="text-sm text-slate-600 dark:text-primary/80 mb-4 leading-relaxed">
+                        The abstraction layer is perfect. You don't get bogged down in UI, you just input commands and
+                        watch the numbers flow. Building a moat strategy and executing it via CLI feels like real
+                        hacking.
+                    </p>
+                    <div class="text-xs text-slate-400 dark:text-primary/40 text-right">
+                        -- User: CypherPunk | Timestamp: 1698301...
+                    </div>
+                </div>
+                <div
+                    class="bg-panel-light dark:bg-panel-dark border border-border-light dark:border-primary/20 p-6 rounded relative">
+                    <div
+                        class="absolute -top-3 left-6 bg-panel-light dark:bg-panel-dark px-2 text-xs text-slate-400 dark:text-primary/50 border border-border-light dark:border-primary/20 rounded">
+                        LOG_ID: #7422</div>
+                    <h3 class="font-bold text-blue-600 dark:text-[#00ccff] mb-3 text-sm">"Terminal vibe is spot on"</h3>
+                    <p class="text-sm text-slate-600 dark:text-primary/80 mb-4 leading-relaxed">
+                        If you love text-based games or just want a distraction that looks like you're working, this is
+                        it. The depth of the 'intention-driven' commands is surprising. It actually teaches you resource
+                        management.
+                    </p>
+                    <div class="text-xs text-slate-400 dark:text-primary/40 text-right">
+                        -- User: RootAdmin | Timestamp: 1698110...
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <footer class="mt-12 border-t border-border-light dark:border-primary/30 bg-panel-light dark:bg-[#05080a] py-12">
+        <div class="max-w-3xl mx-auto px-4 text-center">
+            <h2 class="text-xl font-bold text-slate-800 dark:text-white mb-6">Awaiting Input...</h2>
+            <div
+                class="bg-white dark:bg-black border border-border-light dark:border-primary/50 rounded p-1 flex items-center shadow-sm dark:shadow-[0_0_15px_rgba(0,255,204,0.1)] focus-within:ring-1 focus-within:ring-primary/50 transition-all">
+                <span class="pl-4 pr-2 text-slate-400 dark:text-primary/70">Cortex:~$</span>
+                <input
+                    class="flex-1 bg-transparent border-none focus:ring-0 text-sm md:text-base text-slate-800 dark:text-white placeholder-slate-300 dark:placeholder-primary/30 font-display"
+                    placeholder="join --beta --email user@domain.com" type="text" />
+                <button
+                    class="bg-white text-black px-4 py-2 rounded text-sm font-bold hover:bg-slate-200 transition-colors">
+                    ENTER
+                </button>
+            </div>
+            <div class="mt-8 flex justify-center gap-6 text-sm text-slate-500 dark:text-primary/50">
+                <a class="hover:text-slate-800 dark:hover:text-primary transition-colors" href="#">man cortex</a>
+                <a class="hover:text-slate-800 dark:hover:text-primary transition-colors" href="#">/etc/privacy</a>
+                <a class="hover:text-slate-800 dark:hover:text-primary transition-colors" href="#">/etc/terms</a>
+                <a class="hover:text-slate-800 dark:hover:text-primary transition-colors" href="#">ping @devs</a>
+            </div>
+            <div class="mt-4 text-xs text-slate-400 dark:text-primary/30">© 2024 lemeone-lab Systems. All protocols
+                observed.</div>
+        </div>
+    </footer>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#ffffff",
+                        secondary: "#a1a1aa",
+                        "background-light": "#ffffff",
+                        "background-dark": "#0a0a0a",
+                        "panel-light": "#f4f4f5",
+                        "panel-dark": "#18181b",
+                        "border-light": "#e4e4e7",
+                        "border-dark": "#27272a",
+                    },
+                    fontFamily: {
+                        display: ["'Space Grotesk'", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "4px",
+                    },
+                    boxShadow: {
+                        'neon': '0 0 10px rgba(255, 255, 255, 0.1)',
+                        'neon-strong': '0 0 20px rgba(255, 255, 255, 0.2)',
+                    }
+                },
+            },
+        };
+    </script>
+</body>
+
+</html>

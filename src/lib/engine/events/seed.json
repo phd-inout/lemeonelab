@@ -1,0 +1,162 @@
+[
+    {
+        "id": "seed_tech_debt_001",
+        "name": "技术债悄然累积",
+        "stage": [
+            "SEED"
+        ],
+        "category": "TECH",
+        "baseProbability": 0.25,
+        "effects": [
+            {
+                "target": "techDebt",
+                "delta": 8
+            }
+        ],
+        "narrativePrompt": "描述创始人在高压赶进度时跳过代码审查，技术债悄然积累的场景，语气警示",
+        "cooldownWeeks": 3
+    },
+    {
+        "id": "seed_first_user_feedback_001",
+        "name": "第一个真实用户反馈",
+        "stage": [
+            "SEED"
+        ],
+        "category": "MARKET",
+        "baseProbability": 0.15,
+        "effects": [
+            {
+                "target": "devProgress",
+                "delta": 5
+            },
+            {
+                "target": "moat",
+                "delta": 3
+            }
+        ],
+        "narrativePrompt": "描述一个真实用户发来第一条反馈邮件的兴奋时刻，让创始人突然意识到有人在用他的产品",
+        "cooldownWeeks": 4
+    },
+    {
+        "id": "seed_competitor_launch_001",
+        "name": "竞品静默发布",
+        "stage": [
+            "SEED"
+        ],
+        "category": "MARKET",
+        "baseProbability": 0.12,
+        "effects": [
+            {
+                "target": "moat",
+                "delta": -8
+            },
+            {
+                "target": "devProgress",
+                "delta": -3
+            }
+        ],
+        "narrativePrompt": "描述创始人在 HackerNews 上发现一个做着完全相同产品的竞争对手已经默默发布，内心的震惊与焦虑",
+        "cooldownWeeks": 8
+    },
+    {
+        "id": "seed_angel_interest_001",
+        "name": "天使投资人偶然联系",
+        "stage": [
+            "SEED"
+        ],
+        "category": "FINANCE",
+        "baseProbability": 0.08,
+        "effects": [
+            {
+                "target": "cash",
+                "delta": 50000
+            },
+            {
+                "target": "moat",
+                "delta": 5
+            }
+        ],
+        "narrativePrompt": "描述一个前辈投资人看到创始人的 Twitter 帖子后发私信表达投资意向，这个意外改变了现金流压力",
+        "cooldownWeeks": 12
+    },
+    {
+        "id": "seed_burnout_warning_001",
+        "name": "连续三周无休警告",
+        "stage": [
+            "SEED"
+        ],
+        "category": "PEOPLE",
+        "baseProbability": 0.18,
+        "effects": [
+            {
+                "target": "bwStress",
+                "delta": 15
+            },
+            {
+                "target": "devProgress",
+                "delta": -5
+            }
+        ],
+        "narrativePrompt": "描述创始人连续三周没有休息，开始出现代码错误、判断失误，身体发出信号，语气有不祥的预感",
+        "cooldownWeeks": 2
+    },
+    {
+        "id": "seed_small_grant_001",
+        "name": "政府/孵化器小额补贴",
+        "stage": [
+            "SEED"
+        ],
+        "category": "FINANCE",
+        "baseProbability": 0.10,
+        "effects": [
+            {
+                "target": "cash",
+                "delta": 30000
+            }
+        ],
+        "narrativePrompt": "描述一笔来自孵化器或政府科创基金的小额补贴到账，虽然不多但给了创始人一个月喘息空间",
+        "cooldownWeeks": 10
+    },
+    {
+        "id": "seed_api_outage_001",
+        "name": "核心依赖服务宕机",
+        "stage": [
+            "SEED"
+        ],
+        "category": "TECH",
+        "baseProbability": 0.10,
+        "effects": [
+            {
+                "target": "devProgress",
+                "delta": -8
+            },
+            {
+                "target": "techDebt",
+                "delta": 5
+            }
+        ],
+        "narrativePrompt": "描述核心依赖的第三方 API（如 OpenAI 或 Stripe）突然宕机，整个产品无法运行，创始人紧急 debug 的慌乱场景",
+        "cooldownWeeks": 6
+    },
+    {
+        "id": "seed_media_mention_001",
+        "name": "博主自发提及产品",
+        "stage": [
+            "SEED"
+        ],
+        "category": "MARKET",
+        "baseProbability": 0.09,
+        "effects": [
+            {
+                "target": "moat",
+                "delta": 8
+            },
+            {
+                "target": "cash",
+                "delta": 5000
+            }
+        ],
+        "narrativePrompt": "描述一个有数万粉丝的科技博主偶然发现产品并发帖推荐，带来了一波自然流量，用户增长曲线出现小拐点",
+        "cooldownWeeks": 8
+    }
+]

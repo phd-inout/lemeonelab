@@ -69,7 +69,12 @@ export function calculateResonanceOutput(
   // 4. Entropy Decay Φ(e) = e^(-λE)
   // E = |staff| * 0.5 + (techDebt / 100) * 5.0 (为了对齐 techDebt 量级)
   const E = staffList.length * 0.5 + (techDebt / 100) * 5.0
-  const decay = Math.exp(-0.1 * E)
+  let decay = Math.exp(-0.1 * E)
+
+  // Low Entropy Bonus (小而美)
+  if (staffList.length === 0 && techDebt < 20) {
+    decay = 1.0 + (20 - techDebt) * 0.05 // 最高 2.0x 乘数
+  }
 
   const noise = 0.9 + Math.random() * 0.2
 
@@ -82,10 +87,14 @@ export function calculateResonanceOutput(
 /**
  * 技术债步进
  */
-export function stepTechDebt(techDebt: number, intensity: number): number {
+export function stepTechDebt(techDebt: number, intensity: number, staffCount: number = 0): number {
   let delta = 0.5  // 基础积累（复杂度自然增长）
   if (intensity > 1.0) {
     delta += 5 * (intensity - 1.0)  // 加班快速积累
+  }
+  // Low entropy benefit: zero staff reduces tech debt accumulation
+  if (staffCount === 0 && intensity <= 1.0) {
+    delta -= 0.3 // Reduces base accumulation
   }
   return Math.min(100, Math.max(0, techDebt + delta))
 }
@@ -129,6 +138,7 @@ export function calcBurnRate(state: GameState): number {
     SCALE: 60000,
     IPO: 120000,
     TITAN: 250000,
+    LIFESTYLE_EMPIRE: 30000,
   }
   const base = baseBurnByStage[state.company.stage] ?? 15000
   const staffCost = state.company.staff.reduce((sum, s) => sum + s.salary, 0)
@@ -188,6 +198,11 @@ function checkMarketDeath(state: GameState): boolean {
   return false
 }
 
+function checkLifestyleVictory(state: GameState): boolean {
+  // Personal wealth >= ¥10,000,000 and survived at least 2 years (104 weeks), stage >= PMF
+  return state.founder.wealth >= 10000000 && state.company.weekNumber >= 104 && state.company.stage !== 'SEED' && state.company.stage !== 'MVP'
+}
+
 export function checkGameOver(state: GameState): GameOverResult | null {
   if (checkCashBankrupt(state)) {
     return {
@@ -201,6 +216,14 @@ export function checkGameOver(state: GameState): GameOverResult | null {
     return {
       isFailed: true,
       reason: 'MARKET_DEATH',
+      failedAtStage: state.company.stage,
+      failedAtWeek: state.company.weekNumber,
+    }
+  }
+  if (checkLifestyleVictory(state)) {
+    return {
+      isFailed: false,
+      reason: 'LIFESTYLE_VICTORY',
       failedAtStage: state.company.stage,
       failedAtWeek: state.company.weekNumber,
     }
@@ -254,7 +277,7 @@ export async function runSprint(
     const progressDelta = outputResult.progressDelta
 
     // 2. 更新技术债
-    const newTechDebt = stepTechDebt(currentState.company.techDebt, intensity)
+    const newTechDebt = stepTechDebt(currentState.company.techDebt, intensity, currentState.company.staff.length)
 
     // 3. 更新 MRR
     const newMRR = calcMRR(currentState, mrrMultiplier)
@@ -379,13 +402,15 @@ export function createFounder(
     bwUsed: 0,
     bwStress: 0,
     bwStressStreak: 0,
+    wealth: 0,
   }
 }
 
 export function createCompany(
   industry: IndustryType,
   businessModel: string,
-  founderBackground: string
+  founderBackground: string,
+  name: string
 ): CompanyState {
   const startCash: Record<string, number> = {
     FRESH_GRAD: 50000,
@@ -396,7 +421,7 @@ export function createCompany(
   }
 
   return {
-    name: 'My Startup',
+    name,
     industry,
     businessModel: businessModel as any,
     stage: 'SEED',
@@ -416,5 +441,6 @@ export function createCompany(
     resonance: 0, // 初始待计算
     staff: [], // 初始无员工
     actionCards: [], // 初始无卡牌
+    dividendsPaid: 0,
   }
 }

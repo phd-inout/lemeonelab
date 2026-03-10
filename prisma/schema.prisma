@@ -1,42 +1,162 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "sqlite"
+  // Prisma 7: URL 配置移到 prisma.config.ts，这里只保留 provider
+  provider   = "postgresql"
+  extensions = [vector]
 }
 
-model Founder {
-  id        String   @id @default(uuid())
-  name      String   @default("Unknown")
-  // 6 dimensions
-  logic     Int      @default(50)
-  charisma  Int      @default(50)
-  focus     Int      @default(50)
-  stamina   Int      @default(50)
-  vision    Int      @default(50)
-  luck      Int      @default(50)
-  
-  company   Company?
+// ============================================================
+// User — 玩家账号 (绑定 Supabase Auth auth.users)
+// ============================================================
+model User {
+  id        String   @id // 对应 Supabase auth.users 的 id (UUID)
+  email     String   @unique
+  username  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  rehearsals         Rehearsal[]
+  leaderboardEntries LeaderboardEntry[]
 }
 
-model Company {
+// ============================================================
+// Rehearsal — 每一局模拟的完整记录
+// ============================================================
+model Rehearsal {
   id        String   @id @default(uuid())
-  name      String   @default("My Startup")
-  cash      Int      @default(100000)
-  progress  Int      @default(0)
-  
-  founderId String   @unique
-  founder   Founder  @relation(fields: [founderId], references: [id])
-  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // 玩家标识（未登录时用 sessionId，登录后用 userId）
+  sessionId String
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // 创始人快照（JSON，含 6 维向量 + 背景）
+  founderJson Json
+
+  // 公司快照（JSON，含行业/商业模式/stage 等）
+  companyJson Json
+
+  // Idea Calibration 结果
+  ideaScore Int?
+  ideaJson  Json?
+
+  // 游戏进程
+  currentStage String @default("SEED")
+  weekNumber   Int    @default(0)
+
+  // 经营日志（JSON 数组，每条含 week/narrative/event）
+  logsJson Json @default("[]")
+
+  // 结局
+  isFailed      Boolean @default(false)
+  failureReason String?
+  failedAtStage String?
+  failedAtWeek  Int?
+
+  // Roguelike 遗产积分
+  legacyPoints Int @default(0)
+
+  // 关联
+  leaderboardEntry LeaderboardEntry?
+  staff            Staff[]
+  marketContext    MarketContext?
+}
+
+// ============================================================
+// LeaderboardEntry — 排行榜与死难者名录
+// ============================================================
+model LeaderboardEntry {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  userId      String? // 玩家标识外键
+  user        User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  founderName String
+  archetype   String // 人生背景类型 (如 FRESH_GRAD)
+  stage       String // 达到/失败时的阶段 (如 SEED)
+
+  // 核心榜单数据
+  valuation       Float @default(0) // 估值天梯
+  efficiencyScore Float @default(0) // 效能巅峰 (VpB 值)
+  daysSurvived    Int   @default(0) // 坚韧传说 (存活周数)
+
+  // The Graveyard 数据
+  isFailed     Boolean @default(false)
+  failedReason String? // 失败原因，供复盘查阅
+
+  // 其他配置
+  isPublic Boolean @default(true)
+
+  rehearsalId String    @unique
+  rehearsal   Rehearsal @relation(fields: [rehearsalId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// Staff — 人力资源与关键人物风险
+// ============================================================
+model Staff {
+  id            String  @id @default(uuid())
+  rehearsalId   String
+  role          String // DEV / MKT / OPS / SALES / AI_AGENT
+  talent        Int     @default(60)
+  loyalty       Int     @default(80)
+  salary        Float
+  weeksEmployed Int     @default(0)
+  isKeyPerson   Boolean @default(false)
+  firedAt       Int? // 离职时的游戏周数，null 表示仍在职
+
+  rehearsal Rehearsal @relation(fields: [rehearsalId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// MarketContext — 行业环境与黑天鹅锚点
+// ============================================================
+model MarketContext {
+  id            String @id @default(uuid())
+  rehearsalId   String @unique
+  industry      String // IndustryType
+  businessModel String // BusinessModel
+  volatility    Float  @default(0.5)
+  pivotCount    Int    @default(0) // PIVOT 次数（每次消耗资源）
+
+  rehearsal Rehearsal @relation(fields: [rehearsalId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// GameEventTemplate — 语义驱动随机事件池 (V2)
+// ============================================================
+model GameEventTemplate {
+  id              String   @id @default(uuid())
+  name            String
+  stage           String[] // e.g. ["SEED", "MVP"]
+  category        String
+  baseProbability Float
+  effectsJson     Json
+  narrativePrompt String
+  cooldownWeeks   Int
+
+  // Semantic Vector (gemini-embedding-001 outputs 3072 dims)
+  embedding Unsupported("vector(3072)")?
+}
+
+// ============================================================
+// BusinessCase — Aha-Moment 商业案例知识库 (RAG)
+// ============================================================
+model BusinessCase {
+  id      String   @id @default(uuid())
+  title   String
+  content String
+  tags    String[]
+
+  // Semantic Vector
+  embedding Unsupported("vector(3072)")?
 }

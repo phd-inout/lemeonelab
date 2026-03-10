@@ -12,6 +12,23 @@
 
 **时间预算**：2 周
 
+**P0/P1/P2 优先级（必须严格遵守）**：
+```
+P0（Must，先做完才能动 P1）：
+  ① simulator.ts 伪向量标量引擎 + 技术债机制
+  ② Xterm.js 流式打字 + 6条基础CLI指令解析
+  ③ Gemini Flash AI叙事层（周日志 + Idea Calibration）
+
+P1（P0完成后）：
+  ④ Game Over 检测（CASH_BANKRUPT + MARKET_DEATH）
+  ⑤ 随机事件池（每阶段8个事件）
+  ⑥ 1个 Aha-Moment（hard_truth，硬编码3个案例）
+
+P2（Pre-alpha Backlog）：
+  ⑦ ResonanceEngine Mock 接口对齐
+  ⑧ analyze-gap 简化版（仅列差距，无AI建议）
+```
+
 ---
 
 ### ✅ Pre-alpha IN SCOPE（只做这些）
@@ -36,8 +53,14 @@
 - [x] `sprint --weeks N` 指令（最大 12 周）
 - [x] 每周数值步进：cash 扣减 burn rate、devProgress 增加
 - [x] **burn rate** = 固定基础值（无员工，不计管理内耗）
-- [x] **devProgress** = TEC × 年龄系数 × 随机波动（±10%）
+- [x] **devProgress** = 伪向量标量引擎：`Σ(founderVector_i × industryWeight_i) × ageMultiplier × techDebtPenalty × noise`
+  - `founderVector`：6维数组（与 DRTA 结构对齐）
+  - `industryWeight`：6维行业权重（AI_SAAS = `[0.1, 0.5, 0.15, ...]`，预设常量）
+  - `techDebtPenalty` = `max(0.3, 1 - techDebt/100)`（技术债安全阀）
+  - 计算结果是线性的，极易调试，用户感知上"TEC 高了进度就快"
+- [x] **技术债（TechDebt）**：0-100，加班 +5/week，基础积累 +0.5/week；>70 触发爆炸事件
 - [x] **收入**：仅当 stage ≥ MVP 且 devProgress ≥ 60 时开始产生 MRR（简化公式）
+- [x] **ResonanceEngine Mock**：接口对齐，始终返回固定模拟值（output=1.0, resonance=0.72）；Alpha 替换为真实 DRTA，外部接口不变
 
 #### 随机事件（V1 概率池，精简版）
 - [x] 每阶段 **8-10 个** 核心事件（6 个阶段 × 8 = 约 50 个事件，用 LLM 批量生成后人工审核）
@@ -108,24 +131,36 @@ $ sprint --weeks 4
 
 > 以下功能出现在设计文档里，但 Pre-alpha **一行代码都不写**：
 
-| 功能 | 推迟到 |
-|------|-------|
-| HR 模块（Staff 对象、hire 指令、管理内耗） | **Alpha** |
-| 产品双轨制（productMaturity 独立追踪） | **Alpha** |
-| Custom Vector 自定义属性 | **Alpha** |
-| Burnout 永久属性损耗（Founder Collapse） | **Alpha** |
-| 应收款（Receivable）系统 | **Alpha** |
-| SCALE / IPO / TITAN 阶段 | **Beta** |
-| 随机事件 V2（语义驱动 + pgvector） | **Beta** |
-| Aha-Moment 接 RAG（Graph-RAG / Vector RAG） | **Beta** |
-| Aha-Moment 4 种全实现（只做 hard_truth） | **Alpha（其余 3 种）** |
-| 异步仿真（Upstash Workflow，现实时间挂钩） | **Beta** |
-| 排行榜 + Graveyard | **V1.0** |
-| Supabase Realtime 全局广播 | **V1.0** |
-| DLC 插件化架构代码实现 | **V1.0** |
-| AI 员工（数字分身） | **V2.0** |
-| Monte Carlo 数值压力测试 CI | **Beta** |
-| PIVOT 指令（切换商业模式） | **Alpha** |
+| 功能 | 推迟到 | 原因 |
+|------|-------|------|
+| HR 模块（Staff 对象、hire 指令、管理内耗） | **Alpha** | Pre-alpha 单人模式，无需HR |
+| 产品双轨制（productMaturity 独立追踪） | **Alpha** | 认知过载，先跑单进度条 |
+| Custom Vector 自定义属性 | **Alpha** | 初期用预设背景足够 |
+| Burnout 永久属性损耗（Founder Collapse） | **Alpha** | 需先有 bwStressStreak 追踪 |
+| 应收款（Receivable）系统 | **Alpha** | cash破产逻辑简化版先跑通 |
+| SCALE / IPO / TITAN 阶段 | **Beta** | Pre-alpha 到 PMF 就够了 |
+| 随机事件 V2（语义驱动 + pgvector） | **Beta** | V1概率引擎先跑 |
+| Aha-Moment 接 RAG（Graph-RAG / Vector RAG） | **Beta** | 先验证叙事方向 |
+| Aha-Moment 4 种全实现（只做 hard_truth） | **Alpha（其余 3 种）** | 分批实现 |
+| 异步仿真（Upstash Workflow，现实时间挂钩） | **Beta** | Pre-alpha 同步模拟即可 |
+| 排行榜 + Graveyard | **V1.0** | 需要用户数据支撑 |
+| Supabase Realtime 全局广播 | **V1.0** | 需要多用户场景 |
+| DLC 插件化架构代码实现 | **V1.0** | 平台级能力 |
+| AI 员工（数字分身） | **V2.0** | 明确后期功能 |
+| Monte Carlo 数值压力测试 CI | **Beta** | 有足够事件库后再压测 |
+| PIVOT 指令（切换商业模式） | **Alpha** | 需要先有商业模式运行数据 |
+| **DRTA 完整共鸣引擎**（余弦相似度夹角计算） | **Alpha** | Pre-alpha 用伪向量标量引擎（加权点积）占位；数据结构已对齐，Alpha 只换函数内部 |
+| **行动卡牌系统**（每周3张灵感卡） | **Alpha** | 策略深度功能，核心循环稳定后加入 |
+| **竞争对手 AI 镜像**（rival simulation） | **Beta** | 需要市场向量系统支撑 |
+| **共鸣雷达图 UI**（Resonance Compass） | **Alpha** | 需要 DRTA 向量先运行 |
+| **环境音效**（Ambient Sound） | **V1.0** | 纯体验层，不影响核心 |
+| **ASCII 成就装饰**（数字实验室视觉升级） | **Alpha** | 实现简单但需要里程碑系统先做 |
+| **指令双轨制**（自然语言意图解析） | **Beta** | 核心指令集稳定后扩展 |
+| **AI 顾问主动建议**（60秒无输入触发） | **Alpha** | 防流失机制，Alpha完善UX时加 |
+| **Tab 键自动补全** | **Alpha** | CLI体验优化 |
+| **Roguelike 遗产积分系统**（高级版） | **Beta** | 需要多局运行数据 |
+| **传记模式**（Bio Mode，第5局+） | **V1.0** | 需要历史数据积累 |
+| **M&A 并购/出售指令**（自然语言） | **Beta** | 需要指令双轨制先实现 |
 
 
 ---
@@ -144,6 +179,14 @@ $ sprint --weeks 4
 - [ ] 完整的 SCALE 阶段（晋级条件 + 专属事件）
 - [ ] 事件 `probabilityModifiers` 开启（属性修正概率）
 - [ ] analyze-gap 指令（含 AI 建议版）
+- [ ] **DRTA 共鸣引擎接入**：替换 devProgress 为向量化产出公式 `O = ||V|| × cos(θ) × e^(-λE)`
+  - founderVector（6维属性归一化）× staffMatrices + marketVector（行业决定）
+  - `LemeoneResonanceEngine` 代码已写好（见 `doc/共鸣引擎核心算法.md`），直接集成
+- [ ] **共鸣雷达图 UI**：显示 founderVector（绿线）vs marketVector（蓝线）的实时偏差
+- [ ] **行动卡牌系统**：每周 sprint 前根据 LRN 随机生成 3 张灵感卡（极客冲刺/病毒营销/架构重构等）
+- [ ] **AI 顾问主动建议**：60 秒无输入 / 红色预警时紫色文字提示 + 可点击指令链接
+- [ ] **Tab 键自动补全** + 动态 placeholder
+- [ ] **ASCII 里程碑成就**：达成关键进度时解锁终端页眉装饰
 
 ---
 
@@ -157,6 +200,10 @@ $ sprint --weeks 4
 - [ ] 异步仿真：Upstash Workflow（现实时间挂钩）
 - [ ] Monte Carlo 数值压力测试脚本
 - [ ] FORCED_EXIT 类 Game Over
+- [ ] **竞争对手 AI 镜像**：生成 2-3 个虚构竞争对手，市场向量动态变化，`[NEWS]` 广播系统
+- [ ] **指令双轨制**：支持自然语言意图（如"把公司卖给竞争对手"），AI 解析为标准指令
+- [ ] **M&A 并购/出售流程**：基于 moat/cash/stage 的多条件判断
+- [ ] **Roguelike 遗产积分高级版**：传说级兑换、传记模式前置
 
 ---
 
@@ -169,6 +216,8 @@ $ sprint --weeks 4
 - [ ] Supabase Realtime 全局广播
 - [ ] DLC 插件加载器代码实现（先上官方 AI_SAAS 和 DTC_ECOM 两个剧本）
 - [ ] 最优路径导出为 Solo OS 初始化计划
+- [ ] **环境音效**（Ambient Sound）：深夜研发=低沉氛围音，融资成功=短促电子音
+- [ ] **传记模式**（Bio Mode）：多周目后 AI 生成师承关系前传
 
 ---
 

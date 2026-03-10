@@ -19,6 +19,8 @@ import {
 import { createFounder, createCompany, calculateResonanceOutput, nextMarketDrift, stepTechDebt, calcMRR, calcBurnRate, checkGameOver } from './engine/simulator'
 import { calibrateIdea, generateWeekNarrative, generateAhaMoment } from './engine/cortex-ai'
 import { pickEventForWeek, applyEvent } from './engine/events'
+import { fetchNewsAnalysis } from './engine/news-parser'
+import { checkCompanyNameUnique, createRehearsal, syncRehearsal } from '../app/actions/rehearsal'
 
 // ============================================================
 // Store Interface
@@ -29,12 +31,7 @@ interface LemeoneStore {
     terminalLines: string[]
 
     initFounder: (background: FounderBackground, age: number, name?: string, customVector?: [number, number, number, number, number, number]) => void
-    initCompany: (
-        industry: IndustryType,
-        businessModel: BusinessModel,
-        ideaDescription: string,
-        onLine: (line: string) => void
-    ) => Promise<void>
+    initCompany: (industry: IndustryType, businessModel: BusinessModel, ideaDescription: string, companyName: string, onLine: (line: string) => void) => Promise<void>
     sprintWeeks: (
         weeks: number,
         intensity: number,
@@ -44,6 +41,8 @@ interface LemeoneStore {
     fire: (id: string) => void
     pivot: (newIndustry: IndustryType, newModel: BusinessModel) => { success: boolean, reason?: string }
     playCard: (cardId: string) => { success: boolean, reason?: string }
+    dividend: (amount: number) => { success: boolean, reason?: string }
+    parseNews: (query: string, onLine: (line: string) => void) => Promise<void>
     resetGame: () => void
     pushLine: (line: string) => void
 }
@@ -77,10 +76,21 @@ export const useLemeoneStore = create<LemeoneStore>()(
                 })
             },
 
-            initCompany: async (industry, businessModel, ideaDescription, onLine) => {
+            initCompany: async (industry, businessModel, ideaDescription, companyName, onLine) => {
                 const state = get().gameState
                 if (!state?.founder) {
                     onLine('[ERROR] 请先执行 init-founder')
+                    return
+                }
+                if (state.company) {
+                    onLine('[ERROR] 公司已成立，无法再次初始化')
+                    return
+                }
+
+                onLine('\n🔍 正在校验公司名称唯一性...')
+                const isUnique = await checkCompanyNameUnique(companyName)
+                if (!isUnique) {
+                    onLine(`[ERROR] 公司名称 "${companyName}" 已被注册，请更换名称后重试。`)
                     return
                 }
 
@@ -88,7 +98,7 @@ export const useLemeoneStore = create<LemeoneStore>()(
 
                 const calibration = await calibrateIdea(ideaDescription, industry, businessModel)
 
-                const company = createCompany(industry, businessModel, state.founder.background)
+                const company = createCompany(industry, businessModel, state.founder.background, companyName)
                 company.moat = calibration.initialMoat
                 company.ideaScore = calibration
 
@@ -110,7 +120,16 @@ export const useLemeoneStore = create<LemeoneStore>()(
                 ]
                 lines.forEach(onLine)
 
-                set({ gameState: { ...state, company } })
+                const finalState = { ...state, company } as GameState
+                set({ gameState: finalState })
+
+                try {
+                    const sessionId = uuidv4() // Or fetch user auth session
+                    const rehearsalId = await createRehearsal(sessionId, finalState)
+                    set({ gameState: { ...finalState, id: rehearsalId } })
+                } catch (e) {
+                    onLine('[WARN] 存档写入数据库失败，本次游戏仅保存在本地缓存。')
+                }
             },
 
             sprintWeeks: async (weeks, intensity, onLine) => {
@@ -356,6 +375,10 @@ export const useLemeoneStore = create<LemeoneStore>()(
 
                 set({ gameState: current, isRunning: false })
 
+                if (current.id) {
+                    syncRehearsal(current.id, current).catch(e => console.error("Sync failed", e))
+                }
+
                 return {
                     finalState: current,
                     log: weekLogs,
@@ -453,6 +476,86 @@ export const useLemeoneStore = create<LemeoneStore>()(
 
                 set({ gameState: s })
                 return { success: true }
+            },
+
+            dividend: (amount) => {
+                const state = get().gameState
+                if (!state?.company) return { success: false, reason: '公司未成立' }
+                if (amount <= 0) return { success: false, reason: '分红金额必须大于 0' }
+                if (state.company.cash < amount) return { success: false, reason: '公司可动用现金不足' }
+
+                const s = JSON.parse(JSON.stringify(state)) as GameState
+                s.company.cash -= amount
+                s.company.dividendsPaid = (s.company.dividendsPaid || 0) + amount
+                s.founder.wealth = (s.founder.wealth || 0) + amount
+
+                set({ gameState: s })
+
+                if (s.id) {
+                    syncRehearsal(s.id, s).catch(e => console.error("Sync failed", e))
+                }
+
+                return { success: true }
+            },
+
+            parseNews: async (query, onLine) => {
+                const state = get().gameState
+                if (!state?.company) {
+                    onLine('[ERROR] 公司尚未成立，无法通过新闻校准市场向量')
+                    return
+                }
+
+                onLine(`\\n🛰️ CORTEX 节点正在同步全球新闻与数据流: "${query}"...`)
+                const analysis = await fetchNewsAnalysis(query)
+
+                if (analysis.error) {
+                    onLine(`\\x1b[31m[ERROR] ${analysis.headline}\\x1b[0m`)
+                    onLine(`\\x1b[31m${analysis.commentary}\\x1b[0m`)
+                    return
+                }
+
+                onLine(`\\n\\x1b[36m${'═'.repeat(40)}\\x1b[0m`)
+                onLine(`\\x1b[36m新闻简报: ${analysis.headline}\\x1b[0m`)
+                onLine(`\\x1b[30;1m${analysis.commentary}\\x1b[0m`)
+                onLine(`\\x1b[36m${'─'.repeat(40)}\\x1b[0m`)
+
+                let s = JSON.parse(JSON.stringify(state)) as GameState
+
+                // We must use DIM from state correctly
+                const impact = analysis.industry_impacts?.find(i => i.industry === s.company.industry)
+                if (impact) {
+                    const color = impact.type === 'POSITIVE' ? '\\x1b[32m' : impact.type === 'NEGATIVE' ? '\\x1b[31m' : '\\x1b[33m'
+                    onLine(`\\n${color}预测影响 (${impact.type})：针对您的行业 ${s.company.industry}，市场需求发生如下重塑:\\x1b[0m`)
+
+                    const p = impact.vector_perturbation
+                    const mktDiff = p.mkt || 0
+                    const tecDiff = p.tec || 0
+                    const lrnDiff = p.lrn || 0
+                    const finDiff = p.fin || 0
+                    const opsDiff = p.ops || 0
+                    const chaDiff = p.cha || 0
+
+                    const diffs = [
+                        `MKT: ${mktDiff > 0 ? '+' : ''}${mktDiff.toFixed(2)}`,
+                        `TEC: ${tecDiff > 0 ? '+' : ''}${tecDiff.toFixed(2)}`,
+                        `LRN: ${lrnDiff > 0 ? '+' : ''}${lrnDiff.toFixed(2)}`,
+                        `FIN: ${finDiff > 0 ? '+' : ''}${finDiff.toFixed(2)}`,
+                        `OPS: ${opsDiff > 0 ? '+' : ''}${opsDiff.toFixed(2)}`,
+                        `CHA: ${chaDiff > 0 ? '+' : ''}${chaDiff.toFixed(2)}`
+                    ].join(', ')
+                    onLine(`   ${diffs}`)
+
+                    s.company.marketVector[DIM.MKT] = Math.max(0.01, Math.min(1.0, s.company.marketVector[DIM.MKT] + mktDiff))
+                    s.company.marketVector[DIM.TEC] = Math.max(0.01, Math.min(1.0, s.company.marketVector[DIM.TEC] + tecDiff))
+                    s.company.marketVector[DIM.LRN] = Math.max(0.01, Math.min(1.0, s.company.marketVector[DIM.LRN] + lrnDiff))
+                    s.company.marketVector[DIM.FIN] = Math.max(0.01, Math.min(1.0, s.company.marketVector[DIM.FIN] + finDiff))
+                    s.company.marketVector[DIM.OPS] = Math.max(0.01, Math.min(1.0, s.company.marketVector[DIM.OPS] + opsDiff))
+                    s.company.marketVector[DIM.CHA] = Math.max(0.01, Math.min(1.0, s.company.marketVector[DIM.CHA] + chaDiff))
+
+                    set({ gameState: s })
+                } else {
+                    onLine(`  本次事件未对您的行业 (${s.company.industry}) 造成直接市场影响。`)
+                }
             },
 
             resetGame: () => set({ gameState: null, terminalLines: [], isRunning: false }),

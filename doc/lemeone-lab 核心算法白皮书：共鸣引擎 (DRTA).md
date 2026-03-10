@@ -35,6 +35,95 @@
 2. **升维能力**：未来我们可以增加维度（从 6 维扩展到 N 维），而不需要重写底层代码。  
 3. **确定性与混沌的平衡**：底层是严谨的线性代数，表现层是不可预测的市场博弈。
 
+---
+
+## **4\. 公式勘误与精确定义**
+
+> ⚠️ **重要修正**：原公式符号 `Norm(V_founder · M_team) ⊗ V_market · Φ(e)` 存在语义歧义——
+> `Norm()` 之后丢失了量级信息，两家能力完全不同的公司可能算出相同产出。
+> 以下为精确定义。
+
+### **4.1 完整公式（精确版）**
+
+```
+O = ||state|| × cos(state, V_market) × Φ(e)
+
+其中：
+  state   = V_founder · M_team    （状态向量，未归一化，保留量级）
+  ||state||                       = sqrt(Σ state_i²)，代表公司绝对能力上限
+  cos(state, V_market)            = 余弦相似度（共鸣系数），代表与市场方向的对齐度
+  Φ(e)    = e^(-λE)               （λ = 0.1，熵衰减函数）
+  E       = |staff| × 0.5 + techDebt × 1.2   （熵值 = 团队内耗 + 技术债）
+```
+
+**三个因子的直观含义：**
+
+| 因子 | 含义 | 极端情况 |
+|------|------|---------|
+| `\|\|state\|\|` | 公司绝对能力上限（向量模长）| 0 = 能力为零；越大越强 |
+| `cos(state, V_market)` | 与市场方向的对齐度（共鸣）| -1 = 完全反向；1 = 完美对齐 |
+| `Φ(e) = e^(-λE)` | 内耗衰减系数 | E=0 时 Φ=1（无内耗）；E→∞ 时 Φ→0 |
+
+### **4.2 M_team 矩阵构造（分阶段实现）**
+
+**Pre-alpha（对角矩阵，最简实现）：**
+
+```typescript
+// 每个员工只增强自己角色对应的维度
+// 避免全矩阵的复杂调参
+function buildTeamMatrix(staff: StaffMember[]): number[][] {
+  // 从单位矩阵开始（无员工时 V_founder · I = V_founder，不影响结果）
+  const M = Array.from({length: 6}, (_, i) =>
+    Array.from({length: 6}, (_, j) => i === j ? 1.0 : 0.0)
+  )
+  const ROLE_DIMENSION = { MKT: 0, TEC: 1, LRN: 2, FIN: 3, OPS: 4, CHA: 5 }
+
+  for (const s of staff) {
+    const dim = ROLE_DIMENSION[s.role]
+    const boost = (s.talent / 100) * 0.5  // 最多将该维度放大 1.5x
+    M[dim][dim] += boost
+  }
+  return M
+}
+```
+
+**Alpha（完整 6×6，包含协同/摩擦效应）：**
+
+- 基因契合的员工在矩阵中产生正向非对角项（协同增益）
+- 基因冲突的员工产生负向非对角项（内耗/相消干涉）
+- 矩阵行列式 < 1 时意味着团队在"压缩"创始人能力（Acquihire 恶化场景）
+
+### **4.3 市场漂移精确定义**
+
+```typescript
+// 每周步进时，市场向量发生受限布朗运动
+function nextMarketDrift(current: number[], lambda: number = 0.1): number[] {
+  return current.map(v => {
+    const drift = (Math.random() - 0.5) * lambda  // 单步漂移量受限
+    return Math.max(0.01, Math.min(1.0, v + drift))  // 钳制在 [0.01, 1.0]
+  })
+}
+// lambda 由行业 volatility 决定：
+//   AI_SAAS: 0.08  DTC_ECOM: 0.12  WEB3_GAMING: 0.20  CREATOR_ECONOMY: 0.15
+```
+
+**诺基亚时刻触发条件**：
+```
+若 cos(state, V_market) < 0.3 持续 8 周以上
+  → 触发 AH-MOMENT: "市场已经转向，你还在原地"
+  → 同时触发 MARKET_SHIFT 事件，解锁 PIVOT 指令
+```
+
+### **4.4 代码实现参考**
+
+完整实现见 `doc/共鸣引擎核心算法.md`，核心 `calculateOutput()` 方法已实现上述精确公式：
+```typescript
+// 三因子精确实现（代码已就绪）
+const output = Math.max(0, magnitude * resonance * decay)
+//                         ↑量级      ↑余弦相似度  ↑熵衰减
+```
+
+
 [image1]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAXCAYAAADQpsWBAAAA4ElEQVR4XmNgGDmASU5OrlxeXv6agoLCREVFRTt0BXCgoqIiClS4BKhwFZIwE1BsHhDfRRKDAFlZWWWgxH8g7kOXAwGQHNAwA3TBY0B8E2gbO4oEFEANrIULAN0sDxIEMhkRylABVNMxuADQ04+gmnACkDxQXTuKgDw2jyIBqKZYFAEg7kJSgwKAAdCI4RKopioUQSgAmp4HlZ+DIgG1ejqKIBTA/Au0TQBFAijggGE9A9iwi0C5W0CN2uhyYACUDIA64zQQLwbivxiRiQ0ATXQG4nxQulNSUpJDlx8F1AAAZEk8zhCMLewAAAAASUVORK5CYII=>
 
 [image2]: <data:image/png;base64,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>

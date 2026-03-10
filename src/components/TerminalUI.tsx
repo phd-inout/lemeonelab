@@ -95,6 +95,12 @@ ${C.bold}指令列表${C.reset}
   ${C.green}analyze-gap${C.reset}
     分析当前公司状态距离下一阶段的硬性阈值差距，并由 AI 给出深度策略诊断。
 
+  ${C.green}dividend${C.reset} ${C.gray}[--amount <num>]${C.reset}
+    公司分红。将现金提取到个人账户，追求“生存主义大师” (Lifestyle Empire) 的稳健胜利。
+
+  ${C.green}news${C.reset} ${C.gray}[<query>]${C.reset}
+    分析当前全球发生的新闻事件，并计算其对您所在行业（Market Vector）的潜在扰动。
+
   ${C.green}clear${C.reset}  /  ${C.green}help${C.reset}  /  ${C.green}quit${C.reset}
 `
 
@@ -105,10 +111,10 @@ export default function TerminalUI() {
     const awaitingIdeaRef = useRef(false)  // 是否在等待 idea 输入
     const idleTimerRef = useRef<NodeJS.Timeout | null>(null) // idle timer
 
-    const { gameState, isRunning, initFounder, initCompany, sprintWeeks, hire, fire, pivot, playCard } = useLemeoneStore()
+    const { gameState, isRunning, initFounder, initCompany, sprintWeeks, hire, fire, pivot, playCard, dividend, parseNews } = useLemeoneStore()
 
     // ======= 自动补全词典 =======
-    const COMMANDS = ['init-founder', 'init-company', 'sprint', 'status', 'hire', 'fire', 'pivot', 'play-card', 'cards', 'analyze-gap', 'clear', 'help', 'quit']
+    const COMMANDS = ['init-founder', 'init-company', 'sprint', 'status', 'hire', 'fire', 'pivot', 'play-card', 'cards', 'analyze-gap', 'dividend', 'news', 'clear', 'help', 'quit']
 
     // 重置 Idle Timer
     const resetIdleTimer = useCallback(() => {
@@ -148,6 +154,10 @@ export default function TerminalUI() {
 
         if (!cmd) { showPrompt(); return }
 
+        const localStore = useLemeoneStore.getState()
+        const gameState = localStore.gameState
+        const isRunning = localStore.isRunning
+
         // ── init-founder ──────────────────────────────────────────
         if (cmd === 'init-founder') {
             const bgMap: Record<string, FounderBackground> = {
@@ -185,6 +195,13 @@ export default function TerminalUI() {
 
         // ── init-company ─────────────────────────────────────────
         if (cmd === 'init-company') {
+            const companyName = args.name;
+            if (!companyName) {
+                print(`${C.red}[ERROR] 请提供公司名称，例如: init-company --name "MyStartup"${C.reset}`)
+                showPrompt()
+                return
+            }
+
             const industryMap: Record<string, IndustryType> = {
                 'AI_SAAS': 'AI_SAAS', 'DTC_ECOM': 'DTC_ECOM',
                 'WEB3_GAMING': 'WEB3_GAMING', 'BIOTECH': 'BIOTECH',
@@ -198,12 +215,12 @@ export default function TerminalUI() {
             const industry = industryMap[args.industry?.toUpperCase() ?? ''] ?? 'AI_SAAS'
             const model = modelMap[args.model?.toUpperCase() ?? ''] ?? 'SUBSCRIPTION_SAAS'
 
-            print(`\n行业: ${industry}  模式: ${model}`)
+            print(`\n公司名称: ${companyName}  行业: ${industry}  模式: ${model}`)
             print(`${C.yellow}请描述你的产品 idea（一句话，或直接回车跳过）：${C.reset}`)
 
             // 进入 idea 等待状态
             awaitingIdeaRef.current = true
-                ; (xtermRef.current as any)._ideaContext = { industry, model }
+                ; (xtermRef.current as any)._ideaContext = { industry, model, companyName }
             term.write('\r\n💡 ')
             return
         }
@@ -440,6 +457,42 @@ ${reqStr}
             return
         }
 
+        // ── news ────────────────────────────────────────────────
+        if (cmd === 'news') {
+            const query = input.replace(/^news\s*/, '').trim() || "今日全球科技与监管动态"
+            // Set isRunning or just let parseNews handle it asynchronously
+            // Actually parsing news is async and writes to terminal
+            parseNews(query, print).then(() => {
+                showPrompt()
+            })
+            return // async command
+        }
+
+        // ── dividend ──────────────────────────────────────────────
+        if (cmd === 'dividend') {
+            if (!gameState?.company) {
+                print(`${C.red}[ERROR] 公司尚未成立${C.reset}`)
+                showPrompt()
+                return
+            }
+            const amount = parseInt(args.amount ?? '0', 10)
+            if (isNaN(amount) || amount <= 0) {
+                print(`${C.red}[ERROR] 请指定有效的分红金额。例如: dividend --amount 100000${C.reset}`)
+                showPrompt()
+                return
+            }
+
+            const res = dividend(amount)
+            if (res.success) {
+                print(`${C.green}✅ 分红执行成功：¥${amount.toLocaleString()} 已提取。${C.reset}`)
+                print(`${C.gray}  公司剩余现金: ¥${(gameState.company.cash - amount).toLocaleString()}${C.reset}`)
+            } else {
+                print(`${C.red}分红失败：${res.reason}${C.reset}`)
+            }
+            showPrompt()
+            return
+        }
+
         // ── status ────────────────────────────────────────────────
         if (cmd === 'status') {
             const gs = useLemeoneStore.getState().gameState
@@ -460,7 +513,16 @@ ${reqStr}
             print(`${C.cyan}║${C.reset}  产品进度: ${c.devProgress.toFixed(1)}%`)
             print(`${C.cyan}║${C.reset}  护城河:   ${c.moat.toFixed(0)}/100`)
             print(`${C.cyan}║${C.reset}  技术债:   ${techColor}${c.techDebt.toFixed(0)}/100${C.reset}`)
+            print(`${C.cyan}║${C.reset}  累计分红: ${C.green}¥${(c.dividendsPaid || 0).toLocaleString()}${C.reset}`)
+
+            if (c.stage !== 'SEED') {
+                const entropy = f.vector[DIM.TEC] / Math.max(1, f.vector[DIM.OPS])
+                const VpB = (c.valuation + f.wealth) / Math.max(1, f.bwStress)
+                print(`${C.cyan}║${C.reset}  系统熵值: ${entropy > 3 ? C.red : C.green}${entropy.toFixed(2)}${C.reset}  运营效能 VpB: ${VpB.toFixed(0)}`)
+            }
+
             print(`${C.cyan}╠═ 创始人状态 ══════════════════════════╣${C.reset}`)
+            print(`${C.cyan}║${C.reset}  个人财富: ${C.yellow}¥${(f.wealth || 0).toLocaleString()}${C.reset}`)
             print(`${C.cyan}║${C.reset}  压力值:   ${f.bwStress > 80 ? C.red : C.green}${f.bwStress.toFixed(0)}/100${C.reset} ${f.bwStressStreak > 0 ? `(连贯高压: ${f.bwStressStreak}周)` : ''}`)
             print(`${C.cyan}║${C.reset}  MKT:${f.vector[0].toFixed(0)}  TEC:${f.vector[1].toFixed(0)}  LRN:${f.vector[2].toFixed(0)}  FIN:${f.vector[3].toFixed(0)}  OPS:${f.vector[4].toFixed(0)}  CHA:${f.vector[5].toFixed(0)}`)
             if (c.ideaScore) {
@@ -482,17 +544,17 @@ ${reqStr}
 
         print(`${C.red}Unknown command: ${cmd}${C.reset}  (输入 help 查看指令)`)
         showPrompt()
-    }, [gameState, isRunning, initFounder, initCompany, sprintWeeks, showPrompt, print])
+    }, [initFounder, showPrompt, print])
 
     // 处理 idea 输入（单独处理，不经过 handleCommand）
     const handleIdeaInput = useCallback(async (description: string) => {
         const term = xtermRef.current as any
         if (!term) return
-        const { industry, model } = term._ideaContext ?? {}
+        const { industry, model, companyName } = term._ideaContext ?? {}
         awaitingIdeaRef.current = false
 
-        await initCompany(industry, model, description, (line) => {
-            line.split('\n').forEach(l => {
+        await initCompany(industry, model, description, companyName, (line: string) => {
+            line.split('\n').forEach((l: string) => {
                 xtermRef.current?.write('\r\n' + l)
             })
         })
