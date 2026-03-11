@@ -81,6 +81,9 @@ ${event ? `- 本周事件：${event.name}` : ''}
 // Aha-Moment 核心引擎
 // ============================================================
 
+import { Client } from 'pg'
+import { embed } from 'ai'
+
 export type AhaMomentType = 'HARD_TRUTH' | 'OPS_DEBT_EXPLOSION' | 'BURNOUT_INSIGHT' | 'LUCKY_PIVOT'
 
 const AHA_REFERENCE_CASES = {
@@ -104,13 +107,61 @@ const AHA_REFERENCE_CASES = {
     ]
 }
 
+async function retrieveRelevantCase(state: GameState, type: AhaMomentType) {
+    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    if (!apiKey) return null;
+
+    const query = `
+        商业阶段: ${state.company.stage}
+        现金状态: 剩余 ¥${state.company.cash}, MRR ¥${state.company.mrr}
+        技术与运营: 技术债 ${state.company.techDebt}/100, 团队规模 ${state.company.staff.length}
+        问题核心: ${type}
+    `
+    try {
+        const { embedding } = await embed({
+            model: google.textEmbeddingModel('gemini-embedding-001'),
+            value: query
+        })
+
+        const client = new Client({
+            connectionString: process.env.DIRECT_URL || process.env.DATABASE_URL
+        })
+        await client.connect()
+
+        try {
+            const res = await client.query(`
+                SELECT title, content, tags
+                FROM "BusinessCase"
+                ORDER BY embedding <=> $1::vector
+                LIMIT 1;
+            `, [`[${embedding.join(',')}]`])
+
+            if (res.rows.length > 0) {
+                return {
+                    name: res.rows[0].title,
+                    lesson: res.rows[0].content
+                }
+            }
+        } finally {
+            await client.end()
+        }
+    } catch (e) {
+        console.error("RAG Retrieve error", e)
+    }
+    return null;
+}
+
 export async function generateAhaMoment(
     type: AhaMomentType,
     state: GameState,
     payload?: any
 ): Promise<string> {
-    const cases = AHA_REFERENCE_CASES[type]
-    const ref = cases[Math.floor(Math.random() * cases.length)]
+    const ragCase = await retrieveRelevantCase(state, type)
+    let ref = ragCase
+    if (!ref) {
+        const fallbacks = AHA_REFERENCE_CASES[type] || [{name: 'Default', lesson: '创业是残酷的'}]
+        ref = fallbacks[Math.floor(Math.random() * fallbacks.length)]
+    }
 
     let prompt = ''
 

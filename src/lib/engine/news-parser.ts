@@ -20,6 +20,11 @@ export interface IndustryImpact {
         burn_rate_multiplier: number;
         funding_difficulty: number;
     }
+    rival_spawn?: {
+        name: string;
+        threat_level: number;
+        vector: { mkt: number; tec: number; lrn: number; fin: number; ops: number; cha: number; }
+    }
 }
 
 export interface NewsAnalysisResponse {
@@ -61,6 +66,26 @@ const RESPONSE_SCHEMA = {
                             burn_rate_multiplier: { type: "NUMBER" },
                             funding_difficulty: { type: "NUMBER" }
                         }
+                    },
+                    rival_spawn: {
+                        type: "OBJECT",
+                        description: "如果该新闻暗示同行业中出现强大竞品，可提供它。否则留空。",
+                        properties: {
+                            name: { type: "STRING" },
+                            threat_level: { type: "NUMBER", description: "0到100" },
+                            vector: {
+                                type: "OBJECT",
+                                description: "该竞争对手的能力向量，各维度0-100",
+                                properties: {
+                                    mkt: { type: "NUMBER" },
+                                    tec: { type: "NUMBER" },
+                                    lrn: { type: "NUMBER" },
+                                    fin: { type: "NUMBER" },
+                                    ops: { type: "NUMBER" },
+                                    cha: { type: "NUMBER" }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -77,8 +102,9 @@ const SYSTEM_PROMPT = `
 规则：
 1. 扰动值（vector_perturbation）各维度（mkt, tec, lrn, fin, ops, cha）的调整值应在 [-0.2, +0.2] 之间。
 2. 必须针对不同行业给出差异化的影响分析，行业需完全贴合我们的模型: AI_SAAS, DTC_ECOM, WEB3_GAMING, BIOTECH, CREATOR_ECONOMY, B2B_ENTERPRISE。
-3. 语气应专业、犀利且具有 2026 年硅谷黑客风格。
-4. 必须通过 Google Search 获取过去 24 小时的真实数据。
+3. 如果这则新闻包含潜在竞争对手发布新品或巨额融资，你可返回 rival_spawn 结构，给出对方名字（可以虚构或真实存在的对手）与能力向量（20-100分）。
+4. 语气应专业、犀利且具有 2026 年硅谷黑客风格。
+5. 必须通过 Google Search 获取过去 24 小时的真实数据。
 `;
 
 export async function fetchNewsAnalysis(userQuery: string, retries: number = 2, backoff: number = 1000): Promise<NewsAnalysisResponse> {

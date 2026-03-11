@@ -14,7 +14,10 @@
             }
         ],
         "narrativePrompt": "描述创始人在高压赶进度时跳过代码审查，技术债悄然积累的场景，语气警示",
-        "cooldownWeeks": 3
+        "cooldownWeeks": 3,
+        "probabilityModifiers": [
+            { "targetDim": "OPS", "threshold": 60, "multiplier": 0.5 }
+        ]
     },
     {
         "id": "seed_first_user_feedback_001",
@@ -35,7 +38,10 @@
             }
         ],
         "narrativePrompt": "描述一个真实用户发来第一条反馈邮件的兴奋时刻，让创始人突然意识到有人在用他的产品",
-        "cooldownWeeks": 4
+        "cooldownWeeks": 4,
+        "probabilityModifiers": [
+            { "targetDim": "MKT", "threshold": 70, "multiplier": 1.5 }
+        ]
     },
     {
         "id": "seed_competitor_launch_001",
@@ -56,7 +62,10 @@
             }
         ],
         "narrativePrompt": "描述创始人在 HackerNews 上发现一个做着完全相同产品的竞争对手已经默默发布，内心的震惊与焦虑",
-        "cooldownWeeks": 8
+        "cooldownWeeks": 8,
+        "probabilityModifiers": [
+            { "targetDim": "MKT", "threshold": 80, "multiplier": 0.5 }
+        ]
     },
     {
         "id": "seed_angel_interest_001",

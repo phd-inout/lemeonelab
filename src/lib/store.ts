@@ -14,12 +14,14 @@ import {
     CompanyStage,
     DIM,
     ActionCard,
-    ActionCardType
+    ActionCardType,
+    LegacyRecord
 } from './engine/types'
 import { createFounder, createCompany, calculateResonanceOutput, nextMarketDrift, stepTechDebt, calcMRR, calcBurnRate, checkGameOver } from './engine/simulator'
 import { calibrateIdea, generateWeekNarrative, generateAhaMoment } from './engine/cortex-ai'
-import { pickEventForWeek, applyEvent } from './engine/events'
+import { pickEventForWeek, applyEvent, pickSemanticEvent } from './engine/events'
 import { fetchNewsAnalysis } from './engine/news-parser'
+import { parseIntent } from './engine/intent-parser'
 import { checkCompanyNameUnique, createRehearsal, syncRehearsal } from '../app/actions/rehearsal'
 
 // ============================================================
@@ -29,8 +31,12 @@ interface LemeoneStore {
     gameState: GameState | null
     isRunning: boolean
     terminalLines: string[]
+    
+    // 全局元资产 (Meta Progression)
+    labPoints: number
+    legacyRecords: LegacyRecord[]
 
-    initFounder: (background: FounderBackground, age: number, name?: string, customVector?: [number, number, number, number, number, number]) => void
+    initFounder: (background: FounderBackground, age: number, name?: string, customVector?: [number, number, number, number, number, number], metaUpgrades?: { extraCash?: boolean, extraBandwidth?: boolean, plus5All?: boolean }) => { success: boolean, reason?: string }
     initCompany: (industry: IndustryType, businessModel: BusinessModel, ideaDescription: string, companyName: string, onLine: (line: string) => void) => Promise<void>
     sprintWeeks: (
         weeks: number,
@@ -43,6 +49,7 @@ interface LemeoneStore {
     playCard: (cardId: string) => { success: boolean, reason?: string }
     dividend: (amount: number) => { success: boolean, reason?: string }
     parseNews: (query: string, onLine: (line: string) => void) => Promise<void>
+    nlpAction: (input: string, onLine: (line: string) => void) => Promise<void>
     resetGame: () => void
     pushLine: (line: string) => void
 }
@@ -56,24 +63,55 @@ export const useLemeoneStore = create<LemeoneStore>()(
             gameState: null,
             isRunning: false,
             terminalLines: [],
+            labPoints: 0,
+            legacyRecords: [],
 
             pushLine: (line: string) =>
                 set(s => ({ terminalLines: [...s.terminalLines.slice(-500), line] })),
 
-            initFounder: (background, age, name = 'Founder', customVector) => {
+            initFounder: (background, age, name = 'Founder', customVector, metaUpgrades) => {
+                const s = get()
+                let totalCost = 0
+                if (metaUpgrades) {
+                    if (metaUpgrades.extraCash) totalCost += 200
+                    if (metaUpgrades.extraBandwidth) totalCost += 100
+                    if (metaUpgrades.plus5All) totalCost += 150
+                }
+                if (s.labPoints < totalCost) {
+                    return { success: false, reason: `点数不足以购买 Meta Upgrades (需 ${totalCost} pts，当前 ${s.labPoints} pts)` }
+                }
+
                 const founder = createFounder(background, age, name)
                 if (customVector) {
                     founder.vector = customVector
                 }
+
+                let startingCashBonus = 0
+                if (metaUpgrades) {
+                    if (metaUpgrades.plus5All) {
+                        founder.vector = founder.vector.map(v => Math.min(100, v + 5)) as import('./engine/types').FounderVector
+                    }
+                    if (metaUpgrades.extraBandwidth) {
+                        founder.bwMax += 5
+                    }
+                    if (metaUpgrades.extraCash) {
+                        startingCashBonus = 50000
+                    }
+                }
+
                 set({
+                    labPoints: s.labPoints - totalCost,
                     gameState: {
                         id: uuidv4(),
                         founder,
                         company: null as any,
                         isFailed: false,
                         logs: [],
-                    }
+                        startingCashBonus // 保存给 initCompany 用
+                    } as any
                 })
+                
+                return { success: true }
             },
 
             initCompany: async (industry, businessModel, ideaDescription, companyName, onLine) => {
@@ -101,6 +139,12 @@ export const useLemeoneStore = create<LemeoneStore>()(
                 const company = createCompany(industry, businessModel, state.founder.background, companyName)
                 company.moat = calibration.initialMoat
                 company.ideaScore = calibration
+                
+                // 将 metaUpgrades 保存的现金加进来
+                if ((state as any).startingCashBonus) {
+                    company.cash += (state as any).startingCashBonus
+                    onLine(`\x1b[32m[META UPGRADE] 前人栽树后人乘凉，初始资金追加 ¥${(state as any).startingCashBonus.toLocaleString()}\x1b[0m`)
+                }
 
                 // 格式化 Calibration 输出
                 const lines = [
@@ -153,11 +197,27 @@ export const useLemeoneStore = create<LemeoneStore>()(
 
                 const mrrMulti = current.company.ideaScore?.mrrGrowthMultiplier ?? 1.0
 
+                // === V2 Semantic Events Generator ===
+                let semanticPool: import('@/lib/engine/types').GameEvent[] = []
+                try {
+                    const { fetchSemanticEvents } = await import('@/lib/engine/events-server')
+                    semanticPool = await fetchSemanticEvents(current, 5)
+                    onLine(`\n[CORTEX-AI] 语义引力波探测完毕（获取 ${semanticPool.length} 个潜在未来分支）`)
+                } catch (e) {
+                    console.error("V2 Vector Event Engine Failed, fallback to V1:", e)
+                }
+
                 for (let week = 1; week <= weeks; week++) {
                     current.company.weekNumber++
 
-                    // 事件选取
-                    const event = await pickEventForWeek(current)
+                    // 事件选取 (尝试从语义池中抽取，若失败/冷却则 fallback 到 V1 本地)
+                    let event: import('@/lib/engine/types').GameEvent | null = null
+                    if (semanticPool.length > 0) {
+                        event = pickSemanticEvent(semanticPool, current)
+                    }
+                    if (!event) {
+                        event = await pickEventForWeek(current)
+                    }
                     if (event) current = applyEvent(event, current)
 
                     // 数值步进
@@ -202,14 +262,20 @@ export const useLemeoneStore = create<LemeoneStore>()(
                     const stressDelta = intensity > 1.2 ? 25 : intensity > 1.0 ? 15 : -10
                     current.founder.bwStress = Math.min(100, Math.max(0, current.founder.bwStress + stressDelta))
                     let burnoutTriggered = false
-                    if (current.founder.bwStress > 80) {
+                    if (current.founder.bwStress > 95) {
                         current.founder.bwStressStreak++
-                        if (current.founder.bwStressStreak >= 4) {
+                        if (current.founder.bwStressStreak >= 4 && (current.founder.age >= 35 || intensity > 1.0)) {
                             burnoutTriggered = true
                             current.founder.bwStressStreak = 0
                             current.founder.bwStress = 50
+                            
                             const dimIndex = Math.floor(Math.random() * 6)
-                            current.founder.vector[dimIndex] = Math.max(20, current.founder.vector[dimIndex] - 5)
+                            const dimNames = ['MKT', 'TEC', 'LRN', 'FIN', 'OPS', 'CHA']
+                            const dimName = dimNames[dimIndex]
+                            const oldVal = current.founder.vector[dimIndex]
+                            const dropAmount = Math.floor(Math.random() * 11) + 5
+                            current.founder.vector[dimIndex] = Math.max(20, current.founder.vector[dimIndex] - dropAmount)
+                            current.company.lastBurnoutDrop = { dim: dimName, dropAmount, oldVal }
                         }
                     } else {
                         current.founder.bwStressStreak = 0
@@ -217,7 +283,7 @@ export const useLemeoneStore = create<LemeoneStore>()(
 
                     // Ops Debt Entropy Tracker
                     const entropy = current.founder.vector[DIM.TEC] / Math.max(1, current.founder.vector[DIM.OPS])
-                    if (entropy > 3.0 && current.company.techDebt > 60) {
+                    if (entropy > 3.5) {
                         current.company.opsDebtStreak++
                     } else {
                         current.company.opsDebtStreak = 0
@@ -306,11 +372,12 @@ export const useLemeoneStore = create<LemeoneStore>()(
                     let triggerType: AhaMomentType | null = null
                     let payload: any = null
 
-                    if (current.company.opsDebtStreak >= 3) {
+                    if (current.company.opsDebtStreak >= 6) { // 6 weeks = 3 sprints
                         triggerType = 'OPS_DEBT_EXPLOSION'
                         payload = { entropy }
-                    } else if (current.founder.bwStress > 95 && current.founder.bwStressStreak >= 2) {
+                    } else if (current.company.lastBurnoutDrop) { // from Burnout tracking
                         triggerType = 'BURNOUT_INSIGHT'
+                        payload = { drop: current.company.lastBurnoutDrop }
                     } else if (under) {
                         triggerType = 'HARD_TRUTH'
                         payload = { expected, actual: totalProg }
@@ -339,8 +406,9 @@ export const useLemeoneStore = create<LemeoneStore>()(
 
                         ahaMoment = { type: triggerType, insight, referenceCase: '' }
 
-                        // 重置触发条件
+                        // 重置触发条件与消费数据
                         if (triggerType === 'OPS_DEBT_EXPLOSION') current.company.opsDebtStreak = 0
+                        if (triggerType === 'BURNOUT_INSIGHT') current.company.lastBurnoutDrop = undefined
                         if (triggerType === 'LUCKY_PIVOT' || triggerType === 'HARD_TRUTH') current.company.isPostBadDecision = false
                     }
                 }
@@ -552,10 +620,100 @@ export const useLemeoneStore = create<LemeoneStore>()(
                     s.company.marketVector[DIM.OPS] = Math.max(0.01, Math.min(1.0, s.company.marketVector[DIM.OPS] + opsDiff))
                     s.company.marketVector[DIM.CHA] = Math.max(0.01, Math.min(1.0, s.company.marketVector[DIM.CHA] + chaDiff))
 
+                    if (impact.rival_spawn) {
+                        const r = impact.rival_spawn
+                        const newRival = {
+                            id: uuidv4().substring(0, 8),
+                            name: r.name,
+                            threatLevel: r.threat_level,
+                            vector: [r.vector.mkt, r.vector.tec, r.vector.lrn, r.vector.fin, r.vector.ops, r.vector.cha] as import('./engine/types').FounderVector
+                        }
+                        s.company.rivals.push(newRival)
+                        onLine(`\n\x1b[31;1m[⚠ ALERT] 强大的竞争对手介入市场！\x1b[0m`)
+                        onLine(`\x1b[31m  ▶ 实体: ${newRival.name} (威胁度: ${newRival.threatLevel}/100)\x1b[0m`)
+                        onLine(`\x1b[31m  ▶ 量化威胁向量: MKT:${r.vector.mkt} TEC:${r.vector.tec} LRN:${r.vector.lrn} FIN:${r.vector.fin} OPS:${r.vector.ops} CHA:${r.vector.cha}\x1b[0m`)
+                        onLine(`\x1b[33m该对手将从现在起，持续撕扯拉拽市场漂移量，请调整产品定位避其锋芒或正面应战！\x1b[0m`)
+                    }
+
                     set({ gameState: s })
                 } else {
                     onLine(`  本次事件未对您的行业 (${s.company.industry}) 造成直接市场影响。`)
                 }
+            },
+
+            nlpAction: async (input, onLine) => {
+                const state = get().gameState
+                if (!state?.company) return
+                
+                onLine(`\n🛰️ CORTEX NLP 模块开始解析非标指令: "${input}"...`)
+                const context = `现金: ¥${state.company.cash.toLocaleString()}，阶段: ${state.company.stage}，声誉: ${state.company.reputation}，市占率: ${state.company.marketShare}%\n当前对手: ${state.company.rivals.map(r => r.name + '(威胁:' + r.threatLevel + ')').join(', ')}`
+
+                const result = await parseIntent(input, context)
+
+                let s = JSON.parse(JSON.stringify(state)) as GameState
+
+                onLine(`\n\x1b[36m[CORTEX 解析结果]\x1b[0m 意图: ${result.intent} (${(result.confidence * 100).toFixed(1)}%)`)
+                onLine(`  ${result.cortex_reply}`)
+
+                if (result.intent === 'PR_CAMPAIGN') {
+                    const prCost = 200000 // 默认 PR 开销 20w
+                    if (s.company.cash >= prCost) {
+                        s.company.cash -= prCost
+                        s.company.reputation = Math.min(100, s.company.reputation + 25)
+                        onLine(`\x1b[32m  ✔ 支付了 ¥200,000 运作资金。公司行业声誉攀升至: ${s.company.reputation}\x1b[0m`)
+                        set({ gameState: s })
+                    } else {
+                        onLine(`\x1b[31m  ❌ 现金不足支付本次 PR 活动（需 ¥200,000，当前 ¥${s.company.cash.toLocaleString()}）\x1b[0m`)
+                    }
+                } else if (result.intent === 'ACQUIRE_COMPANY') {
+                    // M&A
+                    const targetName = result.target_name?.toLowerCase() || ''
+                    const rivalIndex = s.company.rivals.findIndex(r => r.name.toLowerCase().includes(targetName))
+
+                    if (rivalIndex >= 0) {
+                        const rival = s.company.rivals[rivalIndex]
+                        // 威胁度越高，收购价格越离谱
+                        const acquireCost = 500000 + rival.threatLevel * 50000 
+                        if (s.company.cash >= acquireCost) {
+                            s.company.cash -= acquireCost
+                            s.company.marketShare += Math.floor(rival.threatLevel / 2)
+                            onLine(`\x1b[32m  ✔ 花费 ¥${acquireCost.toLocaleString()} 成功完成全资收购！\x1b[0m`)
+                            onLine(`\x1b[32m  ✔ 吸收对手份额，当前市场占有率: ${s.company.marketShare}%\x1b[0m`)
+                            s.company.rivals.splice(rivalIndex, 1)
+                            set({ gameState: s })
+                        } else {
+                            onLine(`\x1b[31m  ❌ 对方报价 ¥${acquireCost.toLocaleString()}，你的现金流无法支撑这头巨兽的胃口。\x1b[0m`)
+                        }
+                    } else {
+                        onLine(`\x1b[33m  ⚠ 市场探测阵列未发现能够对应 "${result.target_name}" 的独立实体。\x1b[0m`)
+                    }
+                } else if (result.intent === 'SELL_COMPANY') {
+                    if (s.company.stage === 'SCALE' || s.company.stage === 'IPO' || s.company.stage === 'TITAN') {
+                        onLine(`\n\x1b[35m[SYSTEM] 董事局接受了外部的并购要约。游戏结束。\x1b[0m`)
+                        s.isFailed = true
+                        s.failureReason = 'LIFESTYLE_VICTORY'
+                        s.founder.wealth += s.company.cash + (s.company.mrr * 10) // 卖出套现
+                        
+                        const legacyPoints = Math.floor(s.company.mrr / 50000) * 10 
+                        const legacy: LegacyRecord = { id: uuidv4(), founderName: s.founder.name, finalStage: s.company.stage, weeksAlive: s.company.weekNumber, legacyPoints, reason: s.failureReason }
+                        onLine(`\x1b[32m[LEGACY] 本次成功套现退出，创始人获得 ${legacyPoints} 点 Lab Points。\x1b[0m`)
+                        
+                        set((prev) => ({ gameState: s, labPoints: prev.labPoints + legacyPoints, legacyRecords: [...prev.legacyRecords, legacy] }))
+                    } else {
+                        onLine(`\x1b[31m  ❌ 当前阶段 (${s.company.stage}) 公司体量太小，无人问津并购，只能贱卖。\x1b[0m`)
+                        onLine(`\n\x1b[35m[SYSTEM] 创始人遣散团队并清算资产。游戏结束。\x1b[0m`)
+                        s.isFailed = true
+                        s.failureReason = 'FORCED_EXIT'
+                        
+                        const legacyPoints = Math.floor(s.company.weekNumber / 10)
+                        const legacy: LegacyRecord = { id: uuidv4(), founderName: s.founder.name, finalStage: s.company.stage, weeksAlive: s.company.weekNumber, legacyPoints, reason: s.failureReason }
+                        onLine(`\x1b[32m[LEGACY] 公司黯然倒闭，但在摸爬滚打中积累了 ${legacyPoints} 点 Lab Points。\x1b[0m`)
+                        
+                        set((prev) => ({ gameState: s, labPoints: prev.labPoints + legacyPoints, legacyRecords: [...prev.legacyRecords, legacy] }))
+                    }
+                }
+
+                // IGNORE_OR_CHAT do nothing
             },
 
             resetGame: () => set({ gameState: null, terminalLines: [], isRunning: false }),

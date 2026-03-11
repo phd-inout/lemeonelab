@@ -1,0 +1,42 @@
+[
+  {
+    "id": "case_wework_001",
+    "name": "WeWork",
+    "industry": "B2B_ENTERPRISE",
+    "summary": "在充裕的资金狂欢下忽视了单位经济模型，靠二房东模式包装成科技公司，最终在 IPO 尝试时现金流断裂并估值暴跌。",
+    "keyLessons": ["高速增长无法掩盖负利润", "估值不是护城河", "不要把重资产包装成SaaS"],
+    "metadata": { "tags": ["现金流危机", "估值泡沫", "盲目扩张"] }
+  },
+  {
+    "id": "case_quibi_001",
+    "name": "Quibi",
+    "industry": "CREATOR_ECONOMY",
+    "summary": "由好莱坞和硅谷大佬联手打造，融资 17 亿美元。但完全没有市场验证就开发闭门造车，上线后发现毫无 PMF (Product-Market Fit)，半年即倒闭。",
+    "keyLessons": ["不要在没有 MVP 验证前过度投入", "名人背书不能代替用户需求"],
+    "metadata": { "tags": ["PMF", "巨额融资", "伪需求"] }
+  },
+  {
+    "id": "case_segway_001",
+    "name": "Segway",
+    "industry": "HARDWARE",
+    "summary": "史蒂夫·乔布斯等人曾预言它将重塑城市交通。但产品研发过度保密，导致最终产品过于昂贵且面临严格的法律约束，技术极客的狂欢最终被市场冷落。",
+    "keyLessons": ["技术先进不等于有商业价值", "脱离实际使用场景的创新是自嗨"],
+    "metadata": { "tags": ["技术过度投入", "脱离市场", "闭门造车"] }
+  },
+  {
+    "id": "case_knight_capital_001",
+    "name": "Knight Capital",
+    "industry": "FINANCE",
+    "summary": "因工程师部署了一个未经测试的旧代码分支，导致交易系统在 45 分钟内亏损了 4.6 亿美元，最终导致公司破产并被收购。",
+    "keyLessons": ["运营熵值过高会引发灾难", "技术债是会随时爆炸的定时炸弹", "CI/CD 流程缺失的代价"],
+    "metadata": { "tags": ["技术系统崩溃", "OPS缺失", "运维事故"] }
+  },
+  {
+    "id": "case_fast_co_001",
+    "name": "Fast.co",
+    "industry": "DTC_ECOM",
+    "summary": "这家一键结账服务商在 2021 年大肆扩张，员工人数剧增，每月烧钱数百万美元，然而全年的营业收入只有区区 60 万美元，最终资金链断裂关闭。",
+    "keyLessons": ["招人速度必须匹配营收增速", "管理层过度乐观导致失控", "高 Burn Rate 是初创公司的毒药"],
+    "metadata": { "tags": ["盲目扩张", "BurnRate失控", "管理内耗"] }
+  }
+]

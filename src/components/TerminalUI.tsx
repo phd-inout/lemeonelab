@@ -15,6 +15,7 @@ const C = {
     green: '\x1b[32m',
     yellow: '\x1b[33m',
     cyan: '\x1b[36m',
+    magenta: '\x1b[35m',
     gray: '\x1b[90m',
     bold: '\x1b[1m',
 }
@@ -63,12 +64,15 @@ const HELP_TEXT = `
 ${C.cyan}${C.bold}CORTEX-ZERO CLI${C.reset} ${C.gray}— lemeone-lab Pre-alpha${C.reset}
 
 ${C.bold}指令列表${C.reset}
-  ${C.green}init-founder${C.reset} ${C.gray}[--background <type>] [--age <num>] [--name <str>] [--vector <M,T,L,F,O,C>]${C.reset}
-    初始化创始人。background: fresh-grad | corporate-refugee | serial-pro | industry-veteran | plain-starter
-    (可选项: --vector 直接设置 6 维初始点数，如 80,40,60,50,90,70)
+  ${C.green}init-founder${C.reset} --bg <fresh-grad|corporate-refugee|serial-loser> --age <number> [--name <name>]
+    创建你的第一代或新一代创始人档案。
+    【Meta Upgrades 消耗 Lab Points】: 
+      --extraCash (200pt: +¥50k起步资金) 
+      --extraBandwidth (100pt: +5带宽上限) 
+      --plus5All (150pt: 全属性+5)
 
-  ${C.green}init-company${C.reset} ${C.gray}[--industry <type>] [--model <type>]${C.reset}
-    初始化公司并进行 AI Idea Calibration。
+  ${C.green}init-company${C.reset} --industry <行业> --model <模式> --name <公司名> [--idea "描述..."]
+    创立公司并进行 Cortex Idea Calibration 校准，确定初始护城河。
     industry: AI_SAAS | DTC_ECOM | WEB3_GAMING | BIOTECH | CREATOR_ECONOMY | B2B_ENTERPRISE
 
   ${C.green}sprint${C.reset} ${C.gray}[--weeks <N>] [--intensity <1.0-2.0>]${C.reset}
@@ -101,6 +105,9 @@ ${C.bold}指令列表${C.reset}
   ${C.green}news${C.reset} ${C.gray}[<query>]${C.reset}
     分析当前全球发生的新闻事件，并计算其对您所在行业（Market Vector）的潜在扰动。
 
+  ${C.green}legacy${C.reset}
+    查看已积累的 Lab Points 与历代创始人的死亡纪事（Graveyard）。
+
   ${C.green}clear${C.reset}  /  ${C.green}help${C.reset}  /  ${C.green}quit${C.reset}
 `
 
@@ -114,7 +121,7 @@ export default function TerminalUI() {
     const { gameState, isRunning, initFounder, initCompany, sprintWeeks, hire, fire, pivot, playCard, dividend, parseNews } = useLemeoneStore()
 
     // ======= 自动补全词典 =======
-    const COMMANDS = ['init-founder', 'init-company', 'sprint', 'status', 'hire', 'fire', 'pivot', 'play-card', 'cards', 'analyze-gap', 'dividend', 'news', 'clear', 'help', 'quit']
+    const COMMANDS = ['init-founder', 'init-company', 'sprint', 'status', 'hire', 'fire', 'pivot', 'play-card', 'cards', 'analyze-gap', 'dividend', 'news', 'legacy', 'clear', 'help', 'quit']
 
     // 重置 Idle Timer
     const resetIdleTimer = useCallback(() => {
@@ -534,6 +541,24 @@ ${reqStr}
             return
         }
 
+        // ── legacy ──────────────────────────────────────────────
+        if (cmd === 'legacy' || cmd === 'labs') {
+            const store = useLemeoneStore.getState()
+            print(`\n${C.cyan}╔═ LAB POINTS & LEGACIES ══════════════╗${C.reset}`)
+            print(`${C.cyan}║${C.reset}  当前可用点数: ${C.magenta}${store.labPoints} pts${C.reset}`)
+            print(`${C.cyan}║${C.reset}  已记录先驱数量: ${store.legacyRecords?.length || 0} 人`)
+            if (store.legacyRecords && store.legacyRecords.length > 0) {
+                print(`${C.cyan}╠═ GRAVEYARD 墓碑录 ═══════════════════╣${C.reset}`)
+                store.legacyRecords.slice(-5).forEach(r => {
+                    const finalMsg = `${C.gray}最终阶段: ${r.finalStage} (${r.weeksAlive}周) — 原因: ${r.reason} -> 遗留 ${C.green}${r.legacyPoints} pts${C.reset}`
+                    print(`${C.cyan}║${C.reset}  [${C.bold}${r.founderName}${C.reset}] ${finalMsg}`)
+                })
+            }
+            print(`${C.cyan}╚══════════════════════════════════════╝${C.reset}`)
+            showPrompt()
+            return
+        }
+
         // ── 其他 ─────────────────────────────────────────────────
         if (cmd === 'help') { print(HELP_TEXT); showPrompt(); return }
         if (cmd === 'clear') { term.clear(); showPrompt(); return }
@@ -542,7 +567,13 @@ ${reqStr}
             return
         }
 
-        print(`${C.red}Unknown command: ${cmd}${C.reset}  (输入 help 查看指令)`)
+        // ── 未知指令 -> 传入 NLP 双轨解析 ──────────────────────────────
+        const store = useLemeoneStore.getState()
+        if (store.gameState?.company) {
+            await store.nlpAction(input, print)
+        } else {
+            print(`${C.red}未识别指令: ${cmd}${C.reset}  (输入 help 或先完成 init-company)`)
+        }
         showPrompt()
     }, [initFounder, showPrompt, print])
 
@@ -674,11 +705,60 @@ ${reqStr}
             ; (xtermRef.current as any)._handleIdeaInput = handleIdeaInput
     }, [handleCommand, handleIdeaInput])
 
+    const renderHeaderAscii = (stage: string) => {
+        switch (stage) {
+            case 'MVP':
+                return `
+   __  __   _  _   ___ 
+  |  \\/  | | || | | _ \\
+  | |\\/| | | \\/ | |  _/
+  |_|  |_|  \\__/  |_|  
+`.replace(/^\n/, '').replace(/\n$/, '');
+            case 'PMF':
+                return `
+   ___   __  __   ___ 
+  | _ \\ |  \\/  | | __|
+  |  _/ | |\\/| | | _| 
+  |_|   |_|  |_| |_|  
+`.replace(/^\n/, '').replace(/\n$/, '');
+            case 'SCALE':
+                return `
+   ___   ___    _     _      ___ 
+  / __| / __|  /_\\   | |    | __|
+  \\__ \\| (__  / _ \\  | |__  | _| 
+  |___/ \\___|/_/ \\_\\ |____| |___|
+`.replace(/^\n/, '').replace(/\n$/, '');
+            case 'IPO':
+                return `
+   ___   ___    ___  
+  |_ _| | _ \\  / _ \\ 
+   | |  |  _/ | (_) |
+  |___| |_|    \\___/ 
+`.replace(/^\n/, '').replace(/\n$/, '');
+            case 'TITAN':
+                return `
+   _____   ___   _____    _    _  _ 
+  |_   _| |_ _| |_   _|  /_\\  | \\| |
+    | |    | |    | |   / _ \\ | .  |
+    |_|   |___|   |_|  /_/ \\_\\|_|\\_|
+`.replace(/^\n/, '').replace(/\n$/, '');
+            default:
+                return null;
+        }
+    };
+
     return (
-        <div
-            ref={termRef}
-            className="w-full h-full"
-            style={{ background: '#0a0f14' }}
-        />
+        <div className="w-full h-full flex flex-col bg-[#0a0f14]">
+            {gameState?.company?.stage && gameState.company.stage !== 'SEED' && (
+                <div className="shrink-0 p-4 border-b border-gray-800 text-cyan-500/80 font-mono text-xs whitespace-pre select-none pointer-events-none fade-in">
+                    {renderHeaderAscii(gameState.company.stage)}
+                </div>
+            )}
+            <div
+                ref={termRef}
+                className="w-full flex-1"
+                style={{ background: '#0a0f14' }}
+            />
+        </div>
     )
 }

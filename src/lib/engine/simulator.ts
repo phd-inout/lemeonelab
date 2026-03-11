@@ -28,14 +28,43 @@ function getAgeGroup(age: number): AgeGroup {
   return '50plus'
 }
 
-export function nextMarketDrift(current: FounderVector, industry: IndustryType): FounderVector {
+export function nextMarketDrift(current: FounderVector, industry: IndustryType, rivals: import('./types').Rival[] = []): FounderVector {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { INDUSTRY_VOLATILITY } = require('./types');
+  const { INDUSTRY_VOLATILITY, DIM } = require('./types');
   const lambda = INDUSTRY_VOLATILITY[industry] ?? 0.1;
-  return current.map(v => {
+  let newVector = current.map(v => {
     const drift = (Math.random() - 0.5) * lambda;
     return Math.max(0.01, Math.min(1.0, v + drift));
   }) as FounderVector;
+
+  if (rivals.length > 0) {
+    let [rmkt, rtec, rlrn, rfin, rops, rcha] = [0, 0, 0, 0, 0, 0];
+    let totalThreat = 0;
+    rivals.forEach(r => {
+      rmkt += r.vector[DIM.MKT] * r.threatLevel;
+      rtec += r.vector[DIM.TEC] * r.threatLevel;
+      rlrn += r.vector[DIM.LRN] * r.threatLevel;
+      rfin += r.vector[DIM.FIN] * r.threatLevel;
+      rops += r.vector[DIM.OPS] * r.threatLevel;
+      rcha += r.vector[DIM.CHA] * r.threatLevel;
+      totalThreat += r.threatLevel;
+    });
+
+    if (totalThreat > 0) {
+      const rVecNormalized = [
+        rmkt / (100 * totalThreat), // FounderVector values are 0-100, market vector is 0-1.
+        rtec / (100 * totalThreat),
+        rlrn / (100 * totalThreat),
+        rfin / (100 * totalThreat),
+        rops / (100 * totalThreat),
+        rcha / (100 * totalThreat),
+      ];
+      const pullFactor = 0.05; // 5% pull per week towards the weighted average of rivals
+      newVector = newVector.map((v, i) => v * (1 - pullFactor) + rVecNormalized[i] * pullFactor) as FounderVector;
+    }
+  }
+
+  return newVector;
 }
 
 /**
@@ -160,10 +189,10 @@ function checkStagePromotion(state: GameState): { from: CompanyStage; to: Compan
   if (stage === 'PMF' && mrr >= 50000) {
     return { from: 'PMF', to: 'SCALE' }
   }
-  if (stage === 'SCALE' && mrr >= 500000) {
+  if (stage === 'SCALE' && mrr >= 500000 && state.company.reputation >= 70) {
     return { from: 'SCALE', to: 'IPO' }
   }
-  if (stage === 'IPO' && mrr >= 5000000) {
+  if (stage === 'IPO' && state.company.marketShare >= 35 && state.company.reputation >= 90) {
     return { from: 'IPO', to: 'TITAN' }
   }
   return null
@@ -203,6 +232,18 @@ function checkLifestyleVictory(state: GameState): boolean {
   return state.founder.wealth >= 10000000 && state.company.weekNumber >= 104 && state.company.stage !== 'SEED' && state.company.stage !== 'MVP'
 }
 
+export function calcLegacyPoints(state: GameState): number {
+  const stageScoreMap: Record<CompanyStage, number> = {
+    SEED: 1, MVP: 3, PMF: 6, SCALE: 12, IPO: 20, TITAN: 35, LIFESTYLE_EMPIRE: 50
+  }
+  const stageScore = stageScoreMap[state.company.stage] ?? 1
+  const weeksAlive = state.company.weekNumber
+  const valBonus = (state.company.mrr * 10) / 10000 // Simplified valuation 
+  
+  // Base points
+  return Math.floor((stageScore * 100) + (weeksAlive * 2) + valBonus)
+}
+
 export function checkGameOver(state: GameState): GameOverResult | null {
   if (checkCashBankrupt(state)) {
     return {
@@ -210,6 +251,7 @@ export function checkGameOver(state: GameState): GameOverResult | null {
       reason: 'CASH_BANKRUPT',
       failedAtStage: state.company.stage,
       failedAtWeek: state.company.weekNumber,
+      legacyPoints: calcLegacyPoints(state)
     }
   }
   if (checkMarketDeath(state)) {
@@ -218,6 +260,7 @@ export function checkGameOver(state: GameState): GameOverResult | null {
       reason: 'MARKET_DEATH',
       failedAtStage: state.company.stage,
       failedAtWeek: state.company.weekNumber,
+      legacyPoints: calcLegacyPoints(state)
     }
   }
   if (checkLifestyleVictory(state)) {
@@ -226,6 +269,7 @@ export function checkGameOver(state: GameState): GameOverResult | null {
       reason: 'LIFESTYLE_VICTORY',
       failedAtStage: state.company.stage,
       failedAtWeek: state.company.weekNumber,
+      legacyPoints: calcLegacyPoints(state) * 2 // Victory bonus
     }
   }
   return null
@@ -235,11 +279,33 @@ export function checkGameOver(state: GameState): GameOverResult | null {
 // Aha-Moment 检查
 // ============================================================
 function checkAhaMoment(state: GameState, log: WeekLog[]) {
-  // Pre-alpha 只做 HARD_TRUTH：实际进度 < 预期 40%
+  // 1. BURNOUT_INSIGHT
+  if (state.company.lastBurnoutDrop) {
+    const drop = state.company.lastBurnoutDrop
+    state.company.lastBurnoutDrop = undefined
+    return {
+      type: 'BURNOUT_INSIGHT' as const,
+      insight: `[CORTEX ENGINE] 永久属性变更记录：\n  ${drop.dim}  : ${Math.floor(drop.oldVal)} → ${Math.floor(drop.oldVal - drop.dropAmount)}  (-${drop.dropAmount}) [PERMANENT]\n\n超级个体的边界不是努力的天花板，\n而是恢复力的下限。`,
+      referenceCase: 'Arianna Huffington, Sam Altman, Peter Thiel',
+    }
+  }
+
+  // 2. OPS_DEBT_EXPLOSION
+  const entropyScore = state.founder.vector[DIM.TEC] / Math.max(1, state.founder.vector[DIM.OPS])
+  if (entropyScore > 3.5 && state.company.opsDebtStreak >= 6) { // 3 sprints (6 weeks)
+    state.company.opsDebtStreak = 0 // resetting to avoid spam
+    return {
+      type: 'OPS_DEBT_EXPLOSION' as const,
+      insight: `你的运营熵值已达到 ${entropyScore.toFixed(1)}。\n过去这段时间，你堆了无数新功能，却没有上监控和部署文档。\n清理这些技术债 = 额外 6 周工期 + 巨额维护成本\n\n管理效率也是生产力。这不是软技能，这是算法。`,
+      referenceCase: 'Knight Capital, MySpace, Fast.co',
+    }
+  }
+
+  // Pre-alpha 兜底：HARD_TRUTH（实际进度 < 预期 40%）
   const totalProgress = log.reduce((sum, w) => sum + w.progressDelta, 0)
   const expectedProgress = log.length * 8  // 每周预期 8%
 
-  if (totalProgress < expectedProgress * 0.6) {
+  if (totalProgress < expectedProgress * 0.4) {
     return {
       type: 'HARD_TRUTH' as const,
       insight: '',  // 由 cortex-ai.ts 填充
@@ -297,19 +363,33 @@ export async function runSprint(
     const stressDelta = intensity > 1.2 ? 25 : intensity > 1.0 ? 15 : -10
     currentState.founder.bwStress = Math.min(100, Math.max(0, currentState.founder.bwStress + stressDelta))
     let burnoutTriggered = false
-    if (currentState.founder.bwStress > 80) {
+    if (currentState.founder.bwStress > 95) {
       currentState.founder.bwStressStreak++
-      if (currentState.founder.bwStressStreak >= 4) {
-        // 连续4周高压 -> Burnout!
+      if (currentState.founder.bwStressStreak >= 4 && (currentState.founder.age >= 35 || intensity > 1.0)) {
+        // 连续4周高压且(大龄或疯狂加班) -> Burnout!
         burnoutTriggered = true
-        currentState.founder.bwStressStreak = 0 // 重置连环计
-        currentState.founder.bwStress = 50 // 大修整后压力回到50
-        // 随机一个属性永久掉 5 点
+        currentState.founder.bwStressStreak = 0
+        currentState.founder.bwStress = 50 
+        
+        // 随机一个属性永久掉 5-15 点
         const dimIndex = Math.floor(Math.random() * 6)
-        currentState.founder.vector[dimIndex] = Math.max(20, currentState.founder.vector[dimIndex] - 5)
+        const dimNames = ['MKT', 'TEC', 'LRN', 'FIN', 'OPS', 'CHA']
+        const dimName = dimNames[dimIndex]
+        const oldVal = currentState.founder.vector[dimIndex]
+        const dropAmount = Math.floor(Math.random() * 11) + 5
+        currentState.founder.vector[dimIndex] = Math.max(20, currentState.founder.vector[dimIndex] - dropAmount)
+        currentState.company.lastBurnoutDrop = { dim: dimName, dropAmount, oldVal }
       }
     } else {
       currentState.founder.bwStressStreak = 0
+    }
+
+    // 6.5. OPS Entropy 积累
+    const entropyScore = currentState.founder.vector[DIM.TEC] / Math.max(1, currentState.founder.vector[DIM.OPS])
+    if (entropyScore > 3.5) {
+      currentState.company.opsDebtStreak++
+    } else {
+      currentState.company.opsDebtStreak = 0
     }
 
     // 7. 更新状态
@@ -322,7 +402,7 @@ export async function runSprint(
         mrr: newMRR,
         receivables: newReceivables,
         techDebt: newTechDebt,
-        marketVector: nextMarketDrift(currentState.company.marketVector, currentState.company.industry),
+        marketVector: nextMarketDrift(currentState.company.marketVector, currentState.company.industry, currentState.company.rivals),
         resonance: outputResult.resonance,
       }
     }
@@ -442,5 +522,8 @@ export function createCompany(
     staff: [], // 初始无员工
     actionCards: [], // 初始无卡牌
     dividendsPaid: 0,
+    reputation: 0, // 初始声誉
+    marketShare: 0, // 初始无市占率
+    rivals: [] // 初始无明显对手
   }
 }

@@ -144,6 +144,20 @@ export interface CompanyState {
     staff: Staff[]          // 公司雇员
     actionCards: ActionCard[] // 玩家拥有的行动卡牌
     dividendsPaid: number   // 累计分红金额
+
+    lastBurnoutDrop?: { dim: string; dropAmount: number; oldVal: number } // 触发 burnout 时的损失记录
+
+    // Sprint 6: 晋级后期与对手
+    reputation: number      // 行业声誉 0-100 (IPO 需要 > 70)
+    marketShare: number     // 市场占有率 0-100 (TITAN 需要 > 35)
+    rivals: Rival[]         // 竞争对手列表
+}
+
+export interface Rival {
+    id: string
+    name: string
+    threatLevel: number     // 0-100 威胁度
+    vector: FounderVector   // 竞争对手的打法向量（会牵引市场向量偏移）
 }
 
 // ============================================================
@@ -205,6 +219,19 @@ export interface GameOverResult {
     failedAtStage: CompanyStage
     failedAtWeek: number
     aiPostMortem?: string
+    legacyPoints: number // 结算得分 (Lab Points)
+}
+
+// ============================================================
+// 遗产系统 (Roguelike Progression)
+// ============================================================
+export interface LegacyRecord {
+    id: string
+    founderName: string
+    finalStage: CompanyStage
+    weeksAlive: number
+    legacyPoints: number
+    reason: FailureReason
 }
 
 // ============================================================

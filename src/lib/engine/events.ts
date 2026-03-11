@@ -65,6 +65,45 @@ export async function pickEventForWeek(
 }
 
 /**
+ * 语义池事件选取（V2 增强）
+ * 按照向量检索返回的优先级进行概率筛选，考虑冷却与属性修正
+ */
+export function pickSemanticEvent(
+    semanticPool: GameEvent[],
+    state: GameState
+): GameEvent | null {
+    const currentWeek = state.company.weekNumber
+
+    const available = semanticPool.filter(event => {
+        const lastTriggered = eventCooldowns.get(event.id)
+        if (!lastTriggered) return true
+        return currentWeek - lastTriggered >= event.cooldownWeeks
+    })
+
+    for (const event of available) {
+        let finalProb = event.baseProbability
+
+        if (event.probabilityModifiers) {
+            for (const mod of event.probabilityModifiers) {
+                const dimIdx = DIM[mod.targetDim] as number
+                if (state.founder.vector[dimIdx] >= mod.threshold) {
+                    finalProb *= mod.multiplier
+                }
+            }
+        }
+
+        // Semantic events generally have a much higher priority due to vector matching relevance.
+        // If it passes the intrinsic probability check, we fire it.
+        if (Math.random() < finalProb) {
+            eventCooldowns.set(event.id, currentWeek)
+            return event
+        }
+    }
+
+    return null
+}
+
+/**
  * 将事件效果应用到游戏状态
  */
 export function applyEvent(event: GameEvent, state: GameState): GameState {
