@@ -23,6 +23,8 @@ import { pickEventForWeek, applyEvent, pickSemanticEvent } from './engine/events
 import { fetchNewsAnalysis } from './engine/news-parser'
 import { parseIntent } from './engine/intent-parser'
 import { checkCompanyNameUnique, createRehearsal, syncRehearsal } from '../app/actions/rehearsal'
+import { evaluateAchievements, ACHIEVEMENTS } from './engine/AchievementTracker'
+import { getUnlockedAchievements, unlockAchievements } from '../app/actions/achievements'
 
 // ============================================================
 // Store Interface
@@ -35,7 +37,9 @@ interface LemeoneStore {
     // 全局元资产 (Meta Progression)
     labPoints: number
     legacyRecords: LegacyRecord[]
+    unlockedAchievements: string[]
 
+    fetchAchievements: () => Promise<void>
     initFounder: (background: FounderBackground, age: number, name?: string, customVector?: [number, number, number, number, number, number], metaUpgrades?: { extraCash?: boolean, extraBandwidth?: boolean, plus5All?: boolean }) => { success: boolean, reason?: string }
     initCompany: (industry: IndustryType, businessModel: BusinessModel, ideaDescription: string, companyName: string, onLine: (line: string) => void) => Promise<void>
     sprintWeeks: (
@@ -52,6 +56,10 @@ interface LemeoneStore {
     nlpAction: (input: string, onLine: (line: string) => void) => Promise<void>
     resetGame: () => void
     pushLine: (line: string) => void
+    
+    // 暂停状态
+    isSystemPaused: boolean
+    setSystemPaused: (paused: boolean) => void
 }
 
 // ============================================================
@@ -65,6 +73,19 @@ export const useLemeoneStore = create<LemeoneStore>()(
             terminalLines: [],
             labPoints: 0,
             legacyRecords: [],
+            unlockedAchievements: [],
+            isSystemPaused: false,
+
+            setSystemPaused: (paused: boolean) => set({ isSystemPaused: paused }),
+
+            fetchAchievements: async () => {
+                try {
+                    const ids = await getUnlockedAchievements()
+                    set({ unlockedAchievements: ids })
+                } catch (e) {
+                    console.error("Failed to fetch achievements", e)
+                }
+            },
 
             pushLine: (line: string) =>
                 set(s => ({ terminalLines: [...s.terminalLines.slice(-500), line] })),
@@ -222,6 +243,11 @@ export const useLemeoneStore = create<LemeoneStore>()(
                         break
                     }
 
+                    // 离线/切屏系统暂停逻辑
+                    while (get().isSystemPaused) {
+                        await new Promise(r => setTimeout(r, 1000))
+                    }
+
                     // 阈值熔断检查
                     if (initialDrift - current.company.resonance > 0.15) {
                         currentTickRate = 4000
@@ -340,6 +366,23 @@ export const useLemeoneStore = create<LemeoneStore>()(
                         if (go) {
                             gameOver = go
                             break
+                        }
+
+                        // === 中期成就检测 ===
+                        const currentUnlocks = get().unlockedAchievements
+                        const newUnlocks = evaluateAchievements(current, currentUnlocks)
+                        if (newUnlocks.length > 0) {
+                            set({ unlockedAchievements: [...currentUnlocks, ...newUnlocks] })
+                            unlockAchievements(newUnlocks, current.id).then(res => {
+                                if (res.success && res.totalPointsAwarded) set(s => ({ labPoints: s.labPoints + res.totalPointsAwarded }))
+                            })
+                            newUnlocks.forEach(id => {
+                                const def = ACHIEVEMENTS.find(a => a.id === id)
+                                if (def) {
+                                    onLine(`\n  \x1b[33m\x1b[1m🏆 [ACHIEVEMENT UNLOCKED] ${def.name}\x1b[0m`)
+                                    onLine(`  \x1b[36m${def.desc}\x1b[0m \x1b[35m(+${def.labPoints} Pts)\x1b[0m`)
+                                }
+                            })
                         }
                     }
 

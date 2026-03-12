@@ -60,60 +60,33 @@ function parseArgs(input: string): { cmd: string; args: Record<string, string>; 
 }
 
 const HELP_TEXT = `
-${C.cyan}${C.bold}CORTEX-ZERO CLI${C.reset} ${C.gray}— lemeone-lab Pre-alpha${C.reset}
+${C.cyan}${C.bold}lemeone-lab CLI${C.reset} ${C.gray}— lemeone-lab Pre-alpha${C.reset}
 
-${C.bold}指令列表${C.reset}
-  ${C.green}init-founder${C.reset} --bg <fresh-grad|corporate-refugee|serial-loser> --age <number> [--name <name>]
-    创建你的第一代或新一代创始人档案。
-    【Meta Upgrades 消耗 Lab Points】: 
-      --extraCash (200pt: +¥50k起步资金) 
-      --extraBandwidth (100pt: +5带宽上限) 
-      --plus5All (150pt: 全属性+5)
+${C.bold}核心指令${C.reset}
+  ${C.green}user${C.reset}   - 建立创始人档案
+  ${C.green}corp${C.reset}   - 注册公司实体
+  ${C.green}idea${C.reset}   - 构思初始产品
+  ${C.green}dev${C.reset}    - 研发与冲刺 (支持参数: --weeks N --intensity 1.0)
+  ${C.green}fix${C.reset}    - 修复缓冲与技术债清理
+  ${C.green}test${C.reset}   - 投放测验与调研
+  ${C.green}scan${C.reset}   - 扫描分析市场缺口
+  ${C.green}prod${C.reset}   - 前沿：产品线管理/转型
+  ${C.green}stat${C.reset}   - 查看当前面板状态
 
-  ${C.green}init-company${C.reset} --industry <行业> --model <模式> --name <公司名> [--idea "描述..."]
-    创立公司并进行 Cortex Idea Calibration 校准，确定初始护城河。
-    industry: AI_SAAS | DTC_ECOM | WEB3_GAMING | BIOTECH | CREATOR_ECONOMY | B2B_ENTERPRISE
+${C.bold}组织与扩张${C.reset}
+  ${C.green}hire${C.reset}   - 招募人才 (支持参数: --role MKT/TEC/FIN... --talent 60)
+  ${C.green}fire${C.reset}   - 解雇人才 (支持参数: --id <staff_id>)
+  ${C.green}fund${C.reset}   - 资本运作 / 融资分红 (支持参数: --amount 10000)
+  ${C.green}grow${C.reset}   - PR大推与增长
+  ${C.green}buy${C.reset}    - 竞品并购
+  ${C.green}auto${C.reset}   - 工作流自动化
 
-  ${C.green}sprint${C.reset} ${C.gray}[--weeks <N>] [--intensity <1.0-2.0>]${C.reset}
-    推进 N 周（默认 2 周，最大 12 周）。intensity 为加班强度，高强度会加速技术债与创始人高压崩溃（Burnout）。
+${C.bold}全球生态${C.reset}
+  ${C.green}top${C.reset}    - 全球效能排行 (进入 TITAN 名人堂)
+  ${C.green}grave${C.reset}  - 废墟死难者名录 
+  ${C.green}legacy${C.reset} - 遗产点数查看
 
-  ${C.green}status${C.reset}
-    查看当前所有数值面板。
-
-  ${C.green}hire${C.reset} ${C.gray}[--role <MKT|TEC|LRN|FIN|OPS|CHA>] [--talent <0-100>] [--salary <num>]${C.reset}
-    雇佣员工，直接提升团队对应维度算力，但会急剧增加管理内耗指数（e^-λE）与 Burn Rate。
-
-  ${C.green}fire${C.reset} ${C.gray}[--id <staff_id>]${C.reset}
-    解雇员工，减轻内耗与烧钱负担（不带参数可列出当前员工 ID）。
-
-  ${C.green}pivot${C.reset} ${C.gray}[--industry <type>] [--model <type>]${C.reset}
-    强行转型，消耗大量资金，丢失大量进度，并大幅推高技术债。
-
-  ${C.green}play-card${C.reset} ${C.gray}[--id <card_id>]${C.reset}
-    打出拥有的行动卡牌。输入 cards 查看手中卡牌。
-
-  ${C.green}cards${C.reset}
-    查看手中拥有的全部行动卡牌。
-
-  ${C.green}analyze-gap${C.reset}
-    分析当前公司状态距离下一阶段的硬性阈值差距，并由 AI 给出深度策略诊断。
-
-  ${C.green}dividend${C.reset} ${C.gray}[--amount <num>]${C.reset}
-    公司分红。将现金提取到个人账户，追求“生存主义大师” (Lifestyle Empire) 的稳健胜利。
-
-  ${C.green}news${C.reset} ${C.gray}[<query>]${C.reset}
-    分析当前全球发生的新闻事件，并计算其对您所在行业（Market Vector）的潜在扰动。
-
-  ${C.green}legacy${C.reset}
-    查看已积累的 Lab Points 与历代创始人的死亡纪事（Graveyard）。
-
-  ${C.green}top${C.reset} / ${C.green}rank${C.reset}
-    连接 CORTEX 全球节点，拉取名人堂（效能榜单 Top 20）。
-
-  ${C.green}graveyard${C.reset} ${C.gray}[--id <rehearsal_id>]${C.reset}
-    查看死难者名录（最近阵亡的创始人清单）。带 id 时可请求 AI 尸检复盘。
-
-  ${C.green}clear${C.reset}  /  ${C.green}help${C.reset}  /  ${C.green}quit${C.reset}
+输入 ${C.green}help${C.reset} / ${C.green}clear${C.reset} / ${C.green}quit${C.reset} 控制主终端。
 `
 
 export default function TerminalUI() {
@@ -121,14 +94,37 @@ export default function TerminalUI() {
     const xtermRef = useRef<Terminal | null>(null)
     const fitAddonRef = useRef<FitAddon | null>(null)
     const inputBufRef = useRef('')          // 用 ref 避免闭包陷阱
-    const awaitingIdeaRef = useRef(false)  // 是否在等待 idea 输入
+    const interactiveRef = useRef<{ active: boolean, cmd: string, step: number, data: any }>({ active: false, cmd: '', step: 0, data: {} })
     const idleTimerRef = useRef<NodeJS.Timeout | null>(null) // idle timer
 
     const { gameState, isRunning, initFounder, initCompany, sprintWeeks, hire, fire, pivot, playCard, dividend, parseNews } = useLemeoneStore()
 
     // ======= 自动补全词典 =======
-    const COMMANDS = ['init-founder', 'init-company', 'sprint', 'status', 'hire', 'fire', 'pivot', 'play-card', 'cards', 'analyze-gap', 'dividend', 'news', 'legacy', 'top', 'rank', 'graveyard', 'clear', 'help', 'quit']
-
+    const COMMANDS = [
+        { name: 'user', desc: '建立创始人档案' },
+        { name: 'corp', desc: '注册公司实体' },
+        { name: 'idea', desc: '构思初始产品' },
+        { name: 'stat', desc: '查看各类看板' },
+        { name: 'dev', desc: '研发与冲刺' },
+        { name: 'fix', desc: '修复缓冲' },
+        { name: 'scan', desc: '扫描分析市场' },
+        { name: 'test', desc: '投放测验与调研' },
+        { name: 'prod', desc: '多产品线管理/转型' },
+        { name: 'fund', desc: '资本运作' },
+        { name: 'hire', desc: '招募人才/雇佣AI' },
+        { name: 'auto', desc: '工作流自动化' },
+        { name: 'grow', desc: 'PR大推与增长' },
+        { name: 'buy', desc: '竞品并购' },
+        { name: 'rule', desc: '制定行业规则' },
+        { name: 'play', desc: '使用行动卡牌' },
+        { name: 'cards', desc: '查看持有卡牌' },
+        { name: 'news', desc: '全球新闻广播' },
+        { name: 'legacy', desc: '遗产点数查看' },
+        { name: 'top', desc: '全球效能排行' },
+        { name: 'grave', desc: '废墟死难者名录' },
+        { name: 'help', desc: '系统指令说明' },
+        { name: 'clear', desc: '清理终端屏幕' },
+    ]
     // 重置 Idle Timer
     const resetIdleTimer = useCallback(() => {
         if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
@@ -137,7 +133,7 @@ export default function TerminalUI() {
             if (gs?.company && !useLemeoneStore.getState().isRunning) {
                 const term = xtermRef.current
                 if (term) {
-                    term.write(`\r\n${C.yellow}[CORTEX-AI 絮语] 创始人，时间就是金钱（Burn Rate: ¥${gs.company.burnRate}/周）。如果你迷茫了，试试输入 analyze-gap 或 sprint。${C.reset}\r\n> ` + inputBufRef.current)
+                    term.write(`\r\n${C.yellow}[lemeone_lab 絮语] 创始人，时间就是金钱（Burn Rate: ¥${gs.company.burnRate}/周）。如果你迷茫了，试试输入 scan 或 dev。${C.reset}\r\n> ` + inputBufRef.current)
                 }
             }
         }, 60000) // 60s
@@ -174,6 +170,43 @@ export default function TerminalUI() {
         const gameState = localStore.gameState
         const isRunning = localStore.isRunning
 
+        // ── CommandGate 权限拦截 ─────────────────────────────────────
+        const TIER_LEVELS = {
+            'DAY_0': 0,
+            'SEED': 1,
+            'MVP': 2,
+            'PMF': 3,
+            'SCALE': 4,
+            'IPO': 5,
+            'TITAN': 6
+        }
+        const CMD_REFS: Record<string, number> = {
+            'user': 0, 'corp': 0, 'idea': 0,
+            'help': 0, 'clear': 0, 'quit': 0, 'exit': 0,
+            'legacy': 0, 'top': 0, 'grave': 0,
+
+            'stat': 1, 'dev': 1, 'fix': 1,
+            'play': 1, 'cards': 1, 'news': 1,
+
+            'scan': 2, 'test': 2, 'prod': 2, 'fund': 2,
+
+            'hire': 4, 'fire': 4, 'auto': 4, 'grow': 4,
+
+            'buy': 6, 'rule': 6
+        }
+
+        const currentStage = gameState?.company?.stage || 'DAY_0';
+        const currentTier = TIER_LEVELS[currentStage as keyof typeof TIER_LEVELS] || 0;
+        const reqTier = CMD_REFS[cmd];
+
+        if (reqTier !== undefined && currentTier < reqTier) {
+            const stageNames = Object.keys(TIER_LEVELS);
+            const reqStageName = stageNames.find(k => (TIER_LEVELS as any)[k] === reqTier) || 'UNKNOWN';
+            print(`\n${C.red}[ACCESS_DENIED: TIER_INSUFFICIENT] 该指令需要到达 ${C.bold}${reqStageName}${C.reset}${C.red} 阶段才能解锁。${C.reset}`)
+            showPrompt()
+            return
+        }
+
         // ── cancel / stop ──────────────────────────────────────────
         if (cmd === 'cancel' || cmd === 'stop') {
             if (isRunning) {
@@ -186,8 +219,15 @@ export default function TerminalUI() {
             return
         }
 
-        // ── init-founder ──────────────────────────────────────────
-        if (cmd === 'init-founder') {
+        // ── user ───────────────────────────────────────────
+        if (cmd === 'user') {
+            if (Object.keys(args).length === 0 && !args.bg && !args.age) {
+                interactiveRef.current = { active: true, cmd: 'user', step: 0, data: {} }
+                print(`\n${C.cyan}╔═ 创建新一代创始人 ═════╗${C.reset}`)
+                print(`${C.yellow}请输入创始人姓名 Name (默认: Founder)：${C.reset}`)
+                term.write('\r\n? ')
+                return
+            }
             const bgMap: Record<string, FounderBackground> = {
                 'fresh-grad': 'FRESH_GRAD',
                 'corporate-refugee': 'CORPORATE_REFUGEE',
@@ -195,7 +235,7 @@ export default function TerminalUI() {
                 'industry-veteran': 'INDUSTRY_VETERAN',
                 'plain-starter': 'PLAIN_STARTER',
             }
-            const bg = bgMap[args.background ?? 'plain-starter'] ?? 'PLAIN_STARTER'
+            const bg = bgMap[(args.background || args.bg) ?? 'plain-starter'] ?? 'PLAIN_STARTER'
             const age = parseInt(args.age ?? '28', 10)
             const name = args.name ?? 'Founder'
             let customVector: [number, number, number, number, number, number] | undefined
@@ -216,19 +256,23 @@ export default function TerminalUI() {
                 print(`  FIN: ${vector[3].toFixed(0)}  OPS: ${vector[4].toFixed(0)}  CHA: ${vector[5].toFixed(0)}`)
                 print(`  带宽上限: ${gs.founder.bwMax}  初始压力: ${gs.founder.bwStress}`)
             }
-            print(`\n${C.gray}下一步：输入 init-company 并填写参数：`)
-            print(`  ${C.green}init-company --name \"公司名\" --industry AI_SAAS --model SUBSCRIPTION_SAAS${C.reset}`)
-            print(`${C.gray}  --industry 可选: AI_SAAS | DTC_ECOM | WEB3_GAMING | BIOTECH | CREATOR_ECONOMY | B2B_ENTERPRISE`)
-            print(`  --model   可选: SUBSCRIPTION_SAAS | USAGE_BASED | MARKETPLACE | ONE_TIME_LICENSE | FREEMIUM${C.reset}`)
+            print(`\n${C.gray}下一步：输入 corp 注册公司实体（直接输入 corp 可进入交互创建）${C.reset}`)
             showPrompt()
             return
         }
 
-        // ── init-company ─────────────────────────────────────────
-        if (cmd === 'init-company') {
+        // ── corp ────────────────────────────────────────
+        if (cmd === 'corp') {
+            if (Object.keys(args).length === 0 && !args.name) {
+                interactiveRef.current = { active: true, cmd: 'corp', step: 0, data: {} }
+                print(`\n${C.cyan}╔═ 注册公司实体 ═════════╗${C.reset}`)
+                print(`${C.yellow}请输入公司名称 Name：${C.reset}`)
+                term.write('\r\n? ')
+                return
+            }
             const companyName = args.name;
             if (!companyName) {
-                print(`${C.red}[ERROR] 请提供公司名称，例如: init-company --name "MyStartup"${C.reset}`)
+                print(`${C.red}[ERROR] 请提供公司名称，例如: corp --name "MyStartup"${C.reset}`)
                 showPrompt()
                 return
             }
@@ -245,28 +289,41 @@ export default function TerminalUI() {
             }
             const industry = industryMap[args.industry?.toUpperCase() ?? ''] ?? 'AI_SAAS'
             const model = modelMap[args.model?.toUpperCase() ?? ''] ?? 'SUBSCRIPTION_SAAS'
+            const idea = args.idea || '通用版'
 
             print(`\n${C.cyan}公司: ${companyName}  行业: ${industry}  商业模式: ${model}${C.reset}`)
-            print(`${C.gray}(如需更改，可在下方 idea 处直接回车，稍后用 pivot 切换赛道)${C.reset}`)
-            print(`${C.yellow}请描述你的产品 idea（一句话，或直接回车跳过）：${C.reset}`)            
+            print(`${C.gray}正在执行 Cortex Idea Calibration...${C.reset}`)
 
-            // 进入 idea 等待状态
-            awaitingIdeaRef.current = true
-                ; (xtermRef.current as any)._ideaContext = { industry, model, companyName }
-            term.write('\r\n💡 ')
+            // Execute initCompany immediately with idea arg
+            useLemeoneStore.getState().initCompany(industry, model, idea, companyName, (line: string) => {
+                line.split('\n').forEach((l: string) => print(l))
+            }).then(() => {
+                const gs = useLemeoneStore.getState().gameState
+                if (gs?.company) {
+                    print(`\n${C.gray}下一步：输入 dev 开始研发冲刺（尝试直接输入 dev）${C.reset}`)
+                }
+                showPrompt()
+            }).catch(e => {
+                print(`${C.red}[ERROR] 公司创立失败: ${e}${C.reset}`)
+                showPrompt()
+            })
             return
-        }
-
-        // ── sprint ────────────────────────────────────────────────
-        if (cmd === 'sprint') {
+        }        // ── dev ────────────────────────────────────────────────
+        if (cmd === 'dev') {
             if (!gameState?.company) {
-                print(`${C.red}[ERROR] 请先执行 init-company${C.reset}`)
+                print(`${C.red}[ERROR] 请先执行 corp 注册公司实体${C.reset}`)
                 showPrompt()
                 return
             }
             if (isRunning) {
-                print(`${C.red}[ERROR] Sprint 进行中，请等待${C.reset}`)
+                print(`${C.red}[ERROR] 冲刺进行中，请等待${C.reset}`)
                 showPrompt()
+                return
+            }
+            if (Object.keys(args).length === 0 && !args.weeks && !args.intensity) {
+                interactiveRef.current = { active: true, cmd: 'dev', step: 0, data: {} }
+                print(`\n${C.yellow}预计冲刺几周 [1-12，默认2周]：${C.reset}`)
+                term.write('\r\n? ')
                 return
             }
 
@@ -338,8 +395,8 @@ export default function TerminalUI() {
             return
         }
 
-        // ── pivot ─────────────────────────────────────────────────
-        if (cmd === 'pivot') {
+        // ── prod ─────────────────────────────────────────────────
+        if (cmd === 'prod') {
             if (!gameState?.company) {
                 print(`${C.red}[ERROR] 公司尚未成立${C.reset}`)
                 showPrompt()
@@ -370,8 +427,8 @@ export default function TerminalUI() {
             return
         }
 
-        // ── play-card ─────────────────────────────────────────────
-        if (cmd === 'play-card') {
+        // ── play ─────────────────────────────────────────────
+        if (cmd === 'play') {
             if (!gameState?.company) {
                 print(`${C.red}[ERROR] 公司尚未成立${C.reset}`)
                 showPrompt()
@@ -412,8 +469,8 @@ export default function TerminalUI() {
             return
         }
 
-        // ── analyze-gap ───────────────────────────────────────────
-        if (cmd === 'analyze-gap') {
+        // ── scan ───────────────────────────────────────────
+        if (cmd === 'scan') {
             if (!gameState?.company) {
                 print(`${C.red}[ERROR] 公司尚未成立${C.reset}`)
                 showPrompt()
@@ -500,8 +557,8 @@ ${reqStr}
             return // async command
         }
 
-        // ── dividend ──────────────────────────────────────────────
-        if (cmd === 'dividend') {
+        // ── fund ──────────────────────────────────────────────
+        if (cmd === 'fund') {
             if (!gameState?.company) {
                 print(`${C.red}[ERROR] 公司尚未成立${C.reset}`)
                 showPrompt()
@@ -509,7 +566,7 @@ ${reqStr}
             }
             const amount = parseInt(args.amount ?? '0', 10)
             if (isNaN(amount) || amount <= 0) {
-                print(`${C.red}[ERROR] 请指定有效的分红金额。例如: dividend --amount 100000${C.reset}`)
+                print(`${C.red}[ERROR] 请指定有效的分红金额。例如: fund --amount 100000${C.reset}`)
                 showPrompt()
                 return
             }
@@ -525,8 +582,8 @@ ${reqStr}
             return
         }
 
-        // ── status ────────────────────────────────────────────────
-        if (cmd === 'status') {
+        // ── stat ────────────────────────────────────────────────
+        if (cmd === 'stat') {
             const gs = useLemeoneStore.getState().gameState
             if (!gs?.company) {
                 print(`${C.gray}[空] 游戏未初始化${C.reset}`)
@@ -567,7 +624,7 @@ ${reqStr}
         }
 
         // ── legacy ──────────────────────────────────────────────
-        if (cmd === 'legacy' || cmd === 'labs') {
+        if (cmd === 'legacy') {
             const store = useLemeoneStore.getState()
             print(`\n${C.cyan}╔═ LAB POINTS & LEGACIES ══════════════╗${C.reset}`)
             print(`${C.cyan}║${C.reset}  当前可用点数: ${C.magenta}${store.labPoints} pts${C.reset}`)
@@ -584,8 +641,8 @@ ${reqStr}
             return
         }
 
-        // ── top / rank ───────────────────────────────────────────
-        if (cmd === 'top' || cmd === 'rank') {
+        // ── top ───────────────────────────────────────────
+        if (cmd === 'top') {
             print(`\n${C.cyan}╔═ 名人堂 (The Efficiency Peak) ═══════╗${C.reset}`)
             print(`${C.gray}正在连接 CORTEX 节点拉取全球排行...${C.reset}`)
             fetch('/api/leaderboard').then(res => res.json()).then(data => {
@@ -607,8 +664,8 @@ ${reqStr}
             return // wait for async response to show prompt
         }
 
-        // ── graveyard ────────────────────────────────────────────
-        if (cmd === 'graveyard') {
+        // ── grave ────────────────────────────────────────────
+        if (cmd === 'grave') {
             if (args.id) {
                 print(`\n${C.gray}正在连接尸检终端拉取 #${args.id} 的记录...${C.reset}`)
                 fetch(`/api/graveyard/autopsy?id=${args.id}`).then(res => res.json()).then(data => {
@@ -664,31 +721,78 @@ ${reqStr}
         if (store.gameState?.company) {
             await store.nlpAction(input, print)
         } else {
-            print(`${C.red}未识别指令: ${cmd}${C.reset}  (输入 help 或先完成 init-company)`)
+            print(`${C.red}未识别指令: ${cmd}${C.reset}  (输入 help 或先完成 corp)`)
         }
         showPrompt()
     }, [initFounder, showPrompt, print])
 
-    // 处理 idea 输入（单独处理，不经过 handleCommand）
-    const handleIdeaInput = useCallback(async (description: string) => {
-        const term = xtermRef.current as any
+    // 处理交互式输入表单流程
+    const handleInteractiveInput = useCallback((input: string) => {
+        const term = xtermRef.current
         if (!term) return
-        const { industry, model, companyName } = term._ideaContext ?? {}
-        awaitingIdeaRef.current = false
+        const ctx = interactiveRef.current
+        const val = input.trim()
 
-        await initCompany(industry, model, description, companyName, (line: string) => {
-            line.split('\n').forEach((l: string) => {
-                xtermRef.current?.write('\r\n' + l)
-            })
-        })
-
-        const gs = useLemeoneStore.getState().gameState
-        if (gs?.company) {
-            xtermRef.current?.write(`\r\n${C.gray}下一步：输入 sprint --weeks 4${C.reset}`)
+        if (ctx.cmd === 'user') {
+            if (ctx.step === 0) {
+                ctx.data.name = val || 'Founder'
+                ctx.step++
+                print(`\n${C.yellow}选择核心背景:\n  1. 新鲜血液 (FRESH_GRAD)\n  2. 大厂难民 (CORPORATE_REFUGEE)\n  3. 连续创业者 (SERIAL_PRO)\n  4. 行业老兵 (INDUSTRY_VETERAN)\n  5. 普通人定局 (PLAIN_STARTER)\n  [1-5，默认5]：${C.reset}`)
+                term.write('\r\n? ')
+            } else if (ctx.step === 1) {
+                const map: any = { '1': 'fresh-grad', '2': 'corporate-refugee', '3': 'serial-pro', '4': 'industry-veteran', '5': 'plain-starter' }
+                ctx.data.bg = map[val] || 'plain-starter'
+                ctx.step++
+                print(`\n${C.yellow}请输入年龄 Age [默认 28]：${C.reset}`)
+                term.write('\r\n? ')
+            } else if (ctx.step === 2) {
+                ctx.data.age = parseInt(val) || 28
+                ctx.active = false
+                handleCommand(`user --name ${ctx.data.name} --bg ${ctx.data.bg} --age ${ctx.data.age}`)
+            }
         }
-        showPrompt()
-    }, [initCompany, showPrompt])
-
+        else if (ctx.cmd === 'corp') {
+            if (ctx.step === 0) {
+                if (!val) { print(`${C.red}名称不能为空，请重新输入：${C.reset}`); term.write('\r\n? '); return }
+                ctx.data.name = val
+                ctx.step++
+                print(`\n${C.yellow}选择行业方向:\n  1. AI SaaS\n  2. DTC E-commerce\n  3. Web3/Gaming\n  4. Biotech\n  5. Creator Economy\n  6. B2B Enterprise\n  [1-6，默认1]：${C.reset}`)
+                term.write('\r\n? ')
+            } else if (ctx.step === 1) {
+                const map: any = { '1': 'AI_SAAS', '2': 'DTC_ECOM', '3': 'WEB3_GAMING', '4': 'BIOTECH', '5': 'CREATOR_ECONOMY', '6': 'B2B_ENTERPRISE' }
+                ctx.data.industry = map[val] || 'AI_SAAS'
+                ctx.step++
+                print(`\n${C.yellow}选择商业模式:\n  1. 订阅制 (SUBSCRIPTION_SAAS)\n  2. 消耗制 (USAGE_BASED)\n  3. 平台抽佣 (MARKETPLACE)\n  4. 买断制 (ONE_TIME_LICENSE)\n  5. 免费增值 (FREEMIUM)\n  [1-5，默认1]：${C.reset}`)
+                term.write('\r\n? ')
+            } else if (ctx.step === 2) {
+                const map: any = { '1': 'SUBSCRIPTION_SAAS', '2': 'USAGE_BASED', '3': 'MARKETPLACE', '4': 'ONE_TIME_LICENSE', '5': 'FREEMIUM' }
+                ctx.data.model = map[val] || 'SUBSCRIPTION_SAAS'
+                ctx.step++
+                print(`\n${C.yellow}请描述产品 Idea（直接影响初始护城河，或者回车使用通用版跳过）：${C.reset}`)
+                term.write('\r\n💡 ')
+            } else if (ctx.step === 3) {
+                ctx.data.idea = val || '通用版'
+                ctx.active = false
+                handleCommand(`corp --name "${ctx.data.name}" --industry ${ctx.data.industry} --model ${ctx.data.model} --idea "${ctx.data.idea}"`)
+            }
+        }
+        else if (ctx.cmd === 'dev') {
+            if (ctx.step === 0) {
+                ctx.data.weeks = Math.min(12, Math.max(1, parseInt(val || '2')))
+                ctx.step++
+                print(`\n${C.yellow}选择冲刺强度 [1.常规(强度1.0) 2.极限压榨(强度1.5) 3.修仙(强度2.0)] 默认1：${C.reset}`)
+                term.write('\r\n? ')
+            } else if (ctx.step === 1) {
+                const intensityMap: any = { '1': 1.0, '2': 1.5, '3': 2.0 }
+                ctx.data.intensity = intensityMap[val] || 1.0
+                ctx.active = false
+                handleCommand(`dev --weeks ${ctx.data.weeks} --intensity ${ctx.data.intensity}`)
+            }
+        }
+        else {
+            ctx.active = false; showPrompt()
+        }
+    }, [handleCommand, print, showPrompt])
     // 初始化 Xterm
     useEffect(() => {
         if (!termRef.current || xtermRef.current) return
@@ -717,7 +821,7 @@ ${reqStr}
         term.open(termRef.current)
         fitAddonRef.current = fitAddon
         xtermRef.current = term
-        
+
         // 使用 ResizeObserver 替代原始的 window resize 监听
         const resizeObserver = new ResizeObserver(() => {
             // 确保 DOM 容器有高度以后再 fit
@@ -732,21 +836,25 @@ ${reqStr}
 
         // 欢迎界面
         term.writeln(`${C.cyan}${C.bold}`)
-        term.writeln('  ██████╗ ██████╗ ██████╗ ████████╗███████╗██╗  ██╗')
-        term.writeln('  ██╔════╝██╔═══██╗██╔══██╗╚══██╔══╝██╔════╝╚██╗██╔╝')
-        term.writeln('  ██║     ██║   ██║██████╔╝   ██║   █████╗   ╚███╔╝ ')
-        term.writeln('  ██║     ██║   ██║██╔══██╗   ██║   ██╔══╝   ██╔██╗ ')
-        term.writeln(`  ╚██████╗╚██████╔╝██║  ██║   ██║   ███████╗██╔╝ ██╗`)
-        term.writeln(`   ╚═════╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝${C.reset}`)
-        term.writeln(`${C.gray}  ZERO — Startup Simulator  Pre-alpha${C.reset}`)
+        term.writeln('  ██╗     ███████╗███╗   ███╗███████╗██████╗ ███╗   ██╗███████╗    ██╗      █████╗ ██████╗ ')
+        term.writeln('  ██║     ██╔════╝████╗ ████║██╔════╝██╔══██╗████╗  ██║██╔════╝    ██║     ██╔══██╗██╔══██╗')
+        term.writeln('  ██║     █████╗  ██╔████╔██║█████╗  ██║  ██║██╔██╗ ██║█████╗      ██║     ███████║██████╔╝')
+        term.writeln('  ██║     ██╔══╝  ██║╚██╔╝██║██╔══╝  ██║  ██║██║╚██╗██║██╔══╝      ██║     ██╔══██║██╔══██╗')
+        term.writeln(`  ███████╗███████╗██║ ╚═╝ ██║███████╗██████╔╝██║ ╚████║███████╗██╗ ███████╗██║  ██║██████╔╝`)
+        term.writeln(`  ╚══════╝╚══════╝╚═╝     ╚═╝╚══════╝╚═════╝ ╚═╝  ╚═══╝╚══════╝╚═╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ${C.reset}`)
+        term.writeln(`${C.gray}  LEMEONE_LAB — Startup Simulator  Pre-alpha${C.reset}`)
         term.writeln('')
-        term.writeln(`  输入 ${C.green}help${C.reset} 查看指令，或直接输入 ${C.green}init-founder${C.reset} 开始`)
+        term.writeln(`  输入 ${C.green}help${C.reset} 查看指令，或直接输入 ${C.green}user${C.reset} 开始`)
         term.write('\r\n> ')
 
         // 输入处理
         term.onData((e) => {
             resetIdleTimer()
-            const isAwaiting = awaitingIdeaRef.current
+            const storeState = useLemeoneStore.getState()
+            if (storeState.isSystemPaused) {
+                storeState.setSystemPaused(false)
+            }
+            const isAwaiting = interactiveRef.current.active
             const buf = inputBufRef.current
 
             if (e === '\r') {  // Enter
@@ -754,9 +862,9 @@ ${reqStr}
                 const cmd = buf
                 inputBufRef.current = ''
                 if (isAwaiting) {
-                    handleIdeaInput(cmd)
+                    (xtermRef.current as any)._handleInteractive(cmd)
                 } else {
-                    handleCommand(cmd)
+                    (xtermRef.current as any)._handleCommand(cmd)
                 }
                 return
             }
@@ -770,15 +878,15 @@ ${reqStr}
             }
 
             if (e === '\t') { // Tab completion
-                if (isAwaiting) return // 不要在写 idea 时补全
-                const matches = COMMANDS.filter(c => c.startsWith(buf))
+                if (isAwaiting) return // 不要在交互输入写表单时补全
+                const matches = COMMANDS.filter(c => c.name.startsWith(buf))
                 if (matches.length === 1) {
-                    const completion = matches[0].slice(buf.length)
+                    const completion = matches[0].name.slice(buf.length)
                     inputBufRef.current += completion
                     term.write(completion + ' ')
                     inputBufRef.current += ' '
                 } else if (matches.length > 1) {
-                    term.write('\r\n' + matches.join('  ') + '\r\n> ' + buf)
+                    term.write('\r\n' + matches.map(m => `${C.green}${m.name}${C.reset} ${C.gray}(${m.desc})${C.reset}`).join('  ') + '\r\n> ' + buf)
                 }
                 return
             }
@@ -803,12 +911,12 @@ ${reqStr}
         }
     }, [])  // 只初始化一次
 
-    // handleCommand / handleIdeaInput 变化时更新 term 内的引用（避免 stale closure）
+    // handleCommand / handleInteractive 变化时更新 term 内的引用（避免 stale closure）
     useEffect(() => {
         if (!xtermRef.current) return
             ; (xtermRef.current as any)._handleCommand = handleCommand
-            ; (xtermRef.current as any)._handleIdeaInput = handleIdeaInput
-    }, [handleCommand, handleIdeaInput])
+            ; (xtermRef.current as any)._handleInteractive = handleInteractiveInput
+    }, [handleCommand, handleInteractiveInput])
 
     // stage 变化时（如 ASCII header 显隐），重新适配终端大小
     useEffect(() => {

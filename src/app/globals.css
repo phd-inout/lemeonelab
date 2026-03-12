@@ -65,3 +65,7 @@
   pointer-events: none;
   opacity: 0.1;
 }
+
+.xterm-viewport {
+  overscroll-behavior: contain;
+}

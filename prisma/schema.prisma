@@ -24,6 +24,7 @@ model User {
 
   rehearsals         Rehearsal[]
   leaderboardEntries LeaderboardEntry[]
+  achievements       Achievement[]
 }
 
 // ============================================================
@@ -65,10 +66,11 @@ model Rehearsal {
   // Roguelike 遗产积分
   legacyPoints Int @default(0)
 
-  // 关联
+// 关联
   leaderboardEntry LeaderboardEntry?
   staff            Staff[]
-  marketContext    MarketContext?
+  productLines     ProductLine[]
+  achievements     Achievement[]
 }
 
 // ============================================================
@@ -118,15 +120,24 @@ model Staff {
 }
 
 // ============================================================
-// MarketContext — 行业环境与黑天鹅锚点
+// ProductLine — 多产品线管理（包含对应的市场与业务模型）
 // ============================================================
-model MarketContext {
-  id            String @id @default(uuid())
-  rehearsalId   String @unique
-  industry      String // IndustryType
-  businessModel String // BusinessModel
-  volatility    Float  @default(0.5)
-  pivotCount    Int    @default(0) // PIVOT 次数（每次消耗资源）
+model ProductLine {
+  id               String @id @default(uuid())
+  rehearsalId      String
+  name             String? // 产品名称或 idea 描述
+  industry         String // IndustryType
+  businessModel    String // BusinessModel
+  volatility       Float  @default(0.5)
+  pivotCount       Int    @default(0) // PIVOT 次数（每次消耗资源）
+  
+  // 产品双轨制数据
+  techProgress     Float  @default(0) // 技术开发进度
+  productMaturity  Float  @default(0) // 产品 PMF 成熟度
+  
+  // 多产品调度状态
+  isFocal          Boolean @default(true) // 是否为当前研发与测试资源聚焦点
+  isClosed         Boolean @default(false) // 是否已通过 prod 关停该条线
 
   rehearsal Rehearsal @relation(fields: [rehearsalId], references: [id], onDelete: Cascade)
 }
@@ -159,4 +170,26 @@ model BusinessCase {
 
   // Semantic Vector
   embedding Unsupported("vector(3072)")?
+}
+
+// ============================================================
+// Achievement — 核心里程碑与隐藏成就系统
+// ============================================================
+model Achievement {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  rehearsalId String?
+  rehearsal   Rehearsal? @relation(fields: [rehearsalId], references: [id], onDelete: SetNull)
+
+  achieveId   String   // 成就内部 ID (如: INITIAL_PROFIT)
+  name        String   // 成就展示名
+  category    String   // 类别 (BUSINESS, ALGORITHM, SURVIVAL, AHA_HIDDEN)
+  labPoints   Int      @default(0)
+
+  // 保证每个用户一种成就只能解锁一次
+  @@unique([userId, achieveId])
 }

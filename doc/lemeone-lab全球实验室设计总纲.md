@@ -2,10 +2,11 @@
 
 ## **1\. 项目定义 (Project Definition)**
 
-**lemeone-lab**是一款专为 2026 年创业者设计的**经营压力测试与逻辑推演沙盒**。它通过极简的终端界面（Terminal）和硬核的数值引擎，模拟创业初期的核心矛盾：有限的精力、不确定的市场与脆弱的团队关系。
+**lemeone-lab** 已从单纯的“数值小游戏”升维为一款**AI 首席运营官（COO）兼战略推演沙盒**。它不仅是经营压力测试工具，更是创业者的“飞行模拟器”。
 
-* **核心口号**：在投入真实的一分钱前，先在终端里失败 100 次。  
-* **产品定位**：从管理工具（Record）升维到决策引擎（Simulate）。
+* **核心口号**：在投入真实的一分钱前，先与 AI COO 完成 100 次推演。
+* **产品定位**：从数值模拟（Numerical Sim）升维到决策协同（Decision Copilot）。它彻底解决了“看戏感”，让用户在模拟中获得真实的**项目建议书 (PROPOSAL)**、**需求池 (BACKLOG)** 和 **市场画像 (MARKET_FEEDBACK)**。
+
 
 ## **2\. 核心逻辑引擎设计 (Engine Design)**
 
@@ -19,77 +20,58 @@
 
 基础属性值设定在 ![][image1] 之间，代表创始人的“天赋”与“积累”：
 
-1. ![][image2] **(营销能力)**：影响品牌溢价及获客成本（CAC）。  
-2. ![][image3] **(技术/AI 驾驭)**：决定研发任务的基准产出速度。  
-3. ![][image4] **(基础学习力)**：影响新科技树解锁及属性点升级的速率。  
-4. ![][image5] **(财务感知)**：决定资金利用率及对现金流危机的预警精度。  
-5. ![][image6] **(运营/流程)**：影响行政内耗的减免及技术债的积累速度。  
-6. ![][image7] **(魅力/抗压)**：决定融资成功率、人脉获取及团队关系度（Bonding）的稳定性。
+1.  ![][image2] **(营销能力)**：影响品牌溢价及获客成本（CAC）。  
+2.  ![][image3] **(技术/AI 驾驭)**：决定研发任务的基准产出速度。  
+3.  ![][image4] **(基础学习力)**：影响新科技树解锁及属性点升级的速率。  
+4.  ![][image5] **(财务感知)**：决定资金利用率及对现金流危机的预警精度。  
+5.  ![][image6] **(运营/流程)**：影响行政内耗的减免及技术债的积累速度。  
+6.  ![][image7] **(魅力/抗压)**：决定融资成功率、人脉获取及团队关系度（Bonding）的稳定性。
 
 #### **2.1.2 初始人生背景 (Life Backgrounds)**
 
 在初始化阶段，用户选择不同的背景，将决定初始属性点的分配倾向及启动资金：
 
-* **学院派黑客 (Fresh Grad)**：高 ![][image8]，低 ![][image9]，资金匮乏。  
-* **大厂逃离者 (Corporate Refugee)**：高 ![][image10]，由于长期职业倦怠初始 ![][image7] 较低，资金充足。  
-* **中年连续创业者 (Serial Pro)**：高 ![][image11]，初始人脉丰富，![][image3] 敏感度一般。  
-* **行业老兵 (Industry Veteran)**：极高 ![][image9]，高资产，但 ![][image12] 效能随年龄衰减严重。  
-* **白手起家 (Plain Starter)**：各属性处于均值（60），适合追求纯粹公平模拟的用户。  
-* **自定义 (Custom Vector)**：允许用户自由分配 360 个基础属性点（平均 60 分）。玩家可以通过“透支初始资金”换取额外点数（最高补足至 450 点），但每增加 1 点属性将导致初始现金大幅下降。这体现了“为约束设计”：你无法在开局就拥有满分 600 点的“完美超人”。
+*   **学院派黑客 (Fresh Grad)**：高 ![][image8]，低 ![][image9]，资金匮乏。  
+*   **大厂逃离者 (Corporate Refugee)**：高 ![][image10]，由于长期职业倦怠初始 ![][image7] 较低，资金充足。  
+*   **中年连续创业者 (Serial Pro)**：高 ![][image11]，初始人脉丰富，![][image3] 敏感度一般。  
+*   **行业老兵 (Industry Veteran)**：极高 ![][image9]，高资产，但 ![][image12] 效能随年龄衰减严重。  
+*   **白手起家 (Plain Starter)**：各属性处于均值（60），适合追求纯粹公平模拟的用户。  
+*   **自定义 (Custom Vector)**：允许用户自由分配 360 个基础属性点（平均 60 分）。玩家可以通过“透支初始资金”换取额外点数（最高补足至 450 点），但每增加 1 点属性将导致初始现金大幅下降。这体现了“为约束设计”：你无法在开局就拥有满分 600 点的“完美超人”。
 
 #### **2.1.3 年龄与生理约束 (Biological Constraints)**
 
 年龄不改变属性值，但会改变执行任务时的“效能乘数”：
 
-* **20-29 岁**：研发/学习 效能 1.2x，带宽 (BW) 恢复速度极快，具备![][image13]  
-  特质（降低决策失败的心理打击）。  
-* **30-39 岁**：执行 效能 1.1x，各领域表现均衡。  
-* **40-49 岁**：管理/营销 效能 1.2x，研发 效能下降，拥有![][image14]  
-  特质（初始人脉点数加成）。  
-* **50 岁以上**：决策/融资 效能 1.3x，学习 效能大幅下降，带宽 上限较低，高强度工作有![][image15]  
-  惩罚。
+*   **20-29 岁**：研发/学习 效能 1.2x，带宽 (BW) 恢复速度极快，具备![][image13]  
+    特质（降低决策失败的心理打击）。  
+*   **30-39 岁**：执行 效能 1.1x，各领域表现均衡。  
+*   **40-49 岁**：管理/营销 效能 1.2x，研发 效能下降，拥有![][image14]  
+    特质（初始人脉点数加成）。  
+*   **50 岁以上**：决策/融资 效能 1.3x，学习 效能大幅下降，带宽 上限较低，高强度工作有![][image15]  
+    惩罚。
 
-## **2.2 愿景定义与公司初始化 (Vision & Company Init)**
+## **2.2 愿景定义与战略对齐 (Vision & Strategic Alignment)**
 
-这是从骨架引擎注入"灵魂"的核心步骤。在 `init-company` 指令中，玩家必须完成三个选择，它们构成整局模拟的"物理法则"：
+这是从骨架引擎注入"灵魂"的核心步骤。在 `init-company` 指令中，AI 不再只是评分员，而是你的**资深创始合伙人**，负责将你的 Idea 拆解为可落地的战略文档。
 
-### **2.2.1 行业选择 (IndustryType)**
+#### **2.2.1 行业选择与商业模式 (Industry & Model)**
 
-行业决定了市场环境的**波动率（Volatility）**和**属性权重系数**，直接影响数值引擎的运算规则：
+行业与模式决定了市场环境的波动率、属性权重及现金流结构。在完成选择后，AI COO 将基于你的 Idea 生成初始文档。
 
-| 行业类型 | TEC权重 | MKT权重 | 波动率 | 典型黑天鹅 |
-|---------|--------|--------|-------|----------|
-| `AI_SAAS` | 1.3x | 0.9x | 中 | 大模型厂商降价竞争 |
-| `DTC_ECOM` | 0.8x | 1.4x | 中高 | 平台算法变更、物流危机 |
-| `WEB3_GAMING` | 1.1x | 1.2x | 极高 | 监管打压、黑客攻击（Moat归零） |
-| `BIOTECH` | 1.5x | 0.7x | 高 | 临床失败、专利诉讼 |
-| `CREATOR_ECONOMY` | 0.7x | 1.5x | 高 | 算法打压、平台下架 |
-| `B2B_ENTERPRISE` | 0.9x | 1.1x | 低 | 决策周期极长、大客户流失 |
+#### **2.2.2 Idea Calibration 2.0：从评分到“现实的重击”**
+> **核心哲学**：输入一个点子，AI COO 会给你一份涉及预算、人力需求和风险预警的**项目建议书 (PROPOSAL.md)**。
 
-```typescript
-// src/engine/market-context.ts
-interface MarketContext {
-  industry: IndustryType
-  volatility: number        // 0-1，影响随机事件的振幅
-  tecWeightMultiplier: number
-  mktWeightMultiplier: number
-  specificBlackSwans: string[]  // 该行业专属黑天鹅事件 ID
-}
-```
+**评估反馈将包含：**
+1. **预算与工作量评估**：不再是抽象的分数，而是：“首版 MVP 需要研发 12 周，月支出约 ¥50,000，当前资金仅够支撑 8 周。”
+2. **风险对齐**：AI 会指出核心矛盾点（如：法律红线、人才缺口）。
+3. **决策选择**：AI 会询问用户：“是按‘修仙强度’硬上，还是调整方向（Pivot）？”
 
-### **2.2.2 商业模式 (BusinessModel)**
-
-商业模式决定**收入转化公式**和**现金流结构**：
-
-| 商业模式 | 收入来源 | 现金流特点 | 风险点 |
-|---------|---------|----------|-------|
-| `SUBSCRIPTION_SAAS` | MRR 月付 | 平滑，可预测 | 高流失率（Churn）风险 |
-| `USAGE_BASED` | 按用量计费 | 波动大，强依赖增长 | 用量突降即断崖 |
-| `MARKETPLACE` | 抽佣 | 冷启动难，飞轮成型后爆发 | 双边网络效应门槛高 |
-| `ONE_TIME_LICENSE` | 一次性收款 | 现金流好但不可持续 | 无复购，需持续获客 |
-| `FREEMIUM` | 付费转化 | 前期无收入，依赖规模 | 转化率是生死线 |
-
-**PIVOT 指令**：若中途发现商业模式跑不通（如竞争烈度导致 MRR 骤降），玩家可执行 `pivot --to <新模式>`，代价是消耗 30% 当前现金 + OPS 属性临时下降（团队重组混乱期）。这是最真实的创业写照。
+#### **2.2.3 语义化的工作产出 (Semantic Deliverables)**
+模拟过程不再仅仅产生数字，而是不断充实以下 Markdown 文档：
+*   **PROPOSAL.md (项目建议书)**：包含预算、人力需求和风险评估。
+*   **BACKLOG.md (需求任务池)**：随着研发推进，AI 自动填入具体的开发任务、逻辑架构和交互细节。
+*   **MARKET_FEEDBACK.md (市场画像)**：存储 AI 模拟出的用户原声、Reddit 社区反馈及调研结论。
+ `pivot --to <新模式>`，代价是消耗 30% 当前现金 + OPS 属性临时下降（团队重组混乱期）。这是最真实的创业写照。
 
 ### **2.2.3 产品进度双轨制 (The Product Gap)**
 
@@ -102,13 +84,16 @@ interface ProductState {
   conversionRate: number  // 收入转化率 = f(productMaturity, moat)
 }
 
+```typescript
 // 收入公式：高 techProgress 但低 productMaturity = 高技术、低变现
-function calcRevenue(product: ProductState, market: MarketContext): number {
+function calcRevenue(product: ProductState, productMarket: ProductMarketContext): number {
   const gap = product.techProgress - product.productMaturity
   const gapPenalty = Math.max(0, gap * 0.3)  // 技术/产品脱节惩罚
   return product.productMaturity * product.conversionRate * (1 - gapPenalty / 100)
 }
 ```
+
+> **架构注：** 从 V1 开始，公司支持**多条产品线（ProductLines）并行**。每次执行 `dev` 和 `test` 指令时，效果仅施加于当前被标记为 `isFocal: true` 的主力产品线。通过 `prod` 指令，玩家可以随时切换研发聚焦，或关停持续失血的次要产品线（`isClosed: true`），及时止损释放算力。
 
 **The Product Gap 的 Aha-Moment**：当 `techProgress - productMaturity > 40` 时，系统触发"工程师思维陷阱"事件，AI 点评："你造了一辆兰博基尼，但用户要的是一辆自行车。"
 
@@ -214,12 +199,15 @@ AI 点评："自动生成报告"已有竞品（Notion AI / Rows）。
 
 ## **3\. 核心功能逻辑 (Core Logic)**
 
-### **3.1 研发期枯燥感机制 (Boredom & Progress)**
+### **3.1 战略会话机制 (Strategic Session & Cadence)**
 
-创业 80% 的时间是枯燥的研发。
+为了解决“研发期枯燥感”，系统引入**强制性战略决策节点**：
 
-* **异步步进**：用户执行 sprint \--weeks 4，系统进入后台模拟。现实中每 10 分钟对应模拟中的 1 周。  
-* **被动日志**：系统通过 AI 生成具有真实感的经营 Log。
+* **周期性强制暂停**：每研发/步进 2 虚拟周，系统强制停下进入“战略会话”。
+* **情报汇总**：AI 汇总这 2 周产生的“研发日志”、“技术文档”和“初探调研”。
+* **博弈决策**：AI 像合伙人一样拿着 `BACKLOG.md` 的变动问你：“发现隐私安全隐患，是继续追进度，还是花一周重构？”。
+* **被动日志升级**：日志不再是 `进度 +3%`，而是具体的事件语义（例如：“AI 正在撰写 PRD，发现核心逻辑冲突…”）。
+
 
 ### **3.2 团队关系动力学 (Bonding Dynamics)**
 
@@ -369,7 +357,7 @@ model Rehearsal {
   isFailed         Boolean           @default(false)
   leaderboardEntry LeaderboardEntry?
   staff            Staff[]
-  marketContext    MarketContext?
+  productLines     ProductLine[]     // 1对多：公司可同时运转多个业务线
 }
 
 model LeaderboardEntry {
@@ -402,14 +390,27 @@ model Staff {
   rehearsal     Rehearsal @relation(fields: [rehearsalId], references: [id])
 }
 
-model MarketContext {
-  id            String   @id @default(uuid())
-  rehearsalId   String   @unique
-  industry      String   // IndustryType
-  businessModel String   // BusinessModel
-  volatility    Float    @default(0.5)
-  pivotCount    Int      @default(0)  // PIVOT 次数（每次消耗资源）
-  rehearsal     Rehearsal @relation(fields: [rehearsalId], references: [id])
+// ============================================================
+// ProductLine — 多产品线管理（包含对应的市场与业务模型）
+// ============================================================
+model ProductLine {
+  id               String @id @default(uuid())
+  rehearsalId      String
+  name             String? // 产品名称或 idea 描述
+  industry         String // IndustryType
+  businessModel    String // BusinessModel
+  volatility       Float  @default(0.5)
+  pivotCount       Int    @default(0) // PIVOT 次数（每次消耗资源）
+  
+  // 产品双轨制数据
+  techProgress     Float  @default(0) // 技术开发进度
+  productMaturity  Float  @default(0) // 产品 PMF 成熟度
+  
+  // 多产品调度状态
+  isFocal          Boolean @default(true) // 是否为当前研发与测试资源聚焦点
+  isClosed         Boolean @default(false) // 是否已通过 prod 关停该条线
+
+  rehearsal Rehearsal @relation(fields: [rehearsalId], references: [id])
 }
 
 ## **5\. 实现路径 (Implementation Roadmap)**
@@ -430,8 +431,19 @@ model MarketContext {
 
 * 建立全球排行榜（基于 **Supabase Realtime** 实现实时推送，**不引入 Firestore**）。三维榜单：估值天梯 / 效能巅峰 (VpB) / 坚韧传说；死难者名录通过 pgvector RAG 生成 AI 尸检报告。支持将"最优路径"导出为 Solo OS 初始化计划。
 
-## **6\. 公正严谨的引擎思考**
+## **6\. 核心工程挑战与对齐策略 (Engineering Challenges)**
+
+### **6.1 Token 成本优化策略**
+*   **按需生成**：AI 不会在每个 Tick（小时）都生成 PRD，而是仅在“战略会话（每 2 周）”或“重大语义断点”时触发深度生成。
+*   **折叠式 context**：利用 `SemanticMappingLayer` 动态生成的 MD 段落，对历史日志进行语义压缩（折叠），仅保留关键决策点。
+
+### **6.2 系统 1（数值）与系统 2（语义）的实时感知**
+*   **单向依赖**：语义引擎（AI COO）始终以数值记录（DB）为“唯一真理来源”。
+*   **双重校验**：在触发战略会话前，系统先通过 `DASHBOARD.md` 强制 AI 确认当前数值状态（如：现金是否过低），防止出现“数值已破产，AI 还在建议扩张”的幻觉。
+
+## **7\. 公正严谨的引擎思考**
 
 * **生命周期管理**：系统模拟不仅仅是商业，还包含创始人的健康与老化。  
 * **数据反馈**：模拟中的决策数据将为未来的 AI 经营助手提供真实的语料支撑。
+
 

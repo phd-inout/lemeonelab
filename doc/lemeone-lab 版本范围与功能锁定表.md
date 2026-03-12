@@ -234,31 +234,34 @@ $ sprint --weeks 4
 
 ---
 
-## 核心指令集（最终版，Pre-alpha 只实现上半部分）
+## 核心指令集（最终版，V1 架构）
+
+> **⚠️ 注意**：以下指令由于刚刚进行了“短单词重构”以降低心智负担，所有过去的 `sprint` 等均已合并如下：
 
 ```
-─── Pre-alpha ──────────────────────
-init-founder [--background <type>]    初始化创始人
-init-company [--industry <type>]      初始化公司
-  [--model <businessModel>]
-  [idea 描述（可选）]         → Idea Calibration 分档
-sprint [--weeks N] [--overtime]       推进 N 周
-status                                查看数值面板
+─── 初始化阶段 (Day 0) ──────────────────────
+user                                  建立创始人档案 (交互式表单)
+corp                                  注册公司实体
+idea                                  构思初始产品理念（调起 AI 评估，可重复调用）
+
+─── 核心循环 (日常操作) ──────────────────────
+stat [--fin|--team|--prod]            状态看板
+dev                                   研发冲刺（替代原 sprint）
+fix                                   修复/偿还技术债（替代原 rest）
+scan                                  市场扫描与共鸣分析
+test                                  投放获取反馈
+fund                                  资本运作与财务审计
+prod                                  多产品线管理 (切换焦点/立项/关停)
+
+─── 中后期管理 ──────────────────────
+hire                                  招募与买 AI Agent
+auto                                  建立自动化工作流
+grow                                  大规模买量与 PR
+buy                                   并购竞品
+rule                                  制定行业规则或游说
+
+─── 外部与系统 ──────────────────────
 help                                  指令帮助
-quit                                  退出
-
-─── Alpha 新增 ──────────────────────
-hire                                  进入人才市场
-fire <staffId>                        开除员工
-pivot --to <businessModel>           切换商业模式（代价巨大）
-raise [--amount N]                   发起融资（消耗 CHA）
-analyze-gap                          AI 差距分析（当前状态 vs 晋级目标）
-
-─── Beta 新增 ───────────────────────
-load-dlc <dlcName>                   加载行业剧本
-
-─── V1.0 新增 ───────────────────────
-top [--by valuation|efficiency|days] 查看全球排行榜
-graveyard                            查看死难者名录
-export --format solos                导出最优路径
+top                                   全球排行榜
+quit / exit                           退出
 ```

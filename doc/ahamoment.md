@@ -266,10 +266,13 @@ function buildQuery(snapshot: GameSnapshot): string {
 
 ---
 
-### 3.3 叙事层：人格化 Prompt 引擎（Persona Engine）
+### 3.3 叙事层：Semantic Mapping 与 人格化 Prompt 引擎
+
+> **核心机制**：在将上下文推给大模型之前，通过 `SemanticContextService` 将冰冷的数据库数值投影为 `SOUL.md`, `DASHBOARD.md`, `JOURNAL.md`（详见 [语义映射层设计](./SemanticMappingLayer_语义映射层设计.md)），消除 AI 对于数值的幻觉。
 
 ```typescript
 // src/ai/cortex-ai.ts
+import { SemanticContextService } from './semantic-context.service'
 
 const PERSONA_HARD_TRUTH = `
 你是一个经历过 3 次创业失败、1 次成功 IPO 的资深导师。
@@ -281,18 +284,21 @@ const PERSONA_HARD_TRUTH = `
 async function generateAhaContent(
   persona: string,
   case_: BusinessCase,
-  snapshot: GameSnapshot
+  rehearsal: Rehearsal
 ): Promise<string> {
+  const semanticMarkdownContext = SemanticContextService.generateAhaContext(rehearsal)
+
   return await gemini.generateContent({
     systemInstruction: persona,
-    contents: `
-      当前玩家经营数据：${JSON.stringify(snapshot)}
-      匹配的真实商业案例：${case_.summary}
+    contents: \`
+      \${semanticMarkdownContext}
+
+      匹配的真实商业案例：\${case_.summary}
       
       请用 200 字以内，指出玩家正在犯的核心错误，
       引用上述案例进行类比，
       最后用一个反问句结尾，引导玩家思考。
-    `,
+    \`,
     generationConfig: { maxOutputTokens: 300 }
   })
 }
