@@ -19,9 +19,9 @@ export async function createRehearsal(sessionId: string, state: SandboxState): P
                 userId: user?.id || null,
                 productVector: state.productVector as any,
                 assets: state.assets as any,
-                cash: state.cash,
+                cash: state.metrics.earningPotential,
                 techDebt: state.techDebt,
-                weekNumber: state.weekNumber,
+                weekNumber: state.epoch,
                 currentStage: state.currentStage,
                 isFailed: false
             }
@@ -45,9 +45,9 @@ export async function syncRehearsal(rehearsalId: string, state: SandboxState): P
             data: {
                 productVector: state.productVector as any,
                 assets: state.assets as any,
-                cash: state.cash,
+                cash: state.metrics.earningPotential,
                 techDebt: state.techDebt,
-                weekNumber: state.weekNumber,
+                weekNumber: state.epoch,
                 currentStage: state.currentStage,
             }
         });

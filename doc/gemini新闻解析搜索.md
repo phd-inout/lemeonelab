@@ -1,6 +1,10 @@
 /**
  * Lemeone-Lab News Parser Service
  * 职能：抓取实时新闻并将其向量化为 DRTA 扰动参数
+ * 
+ * 【2026 架构升级 - 延迟与限流优化】
+ * 1. 引入 Semantic Cache (语义缓存层)：防止高并发下 API 限流卡死模拟器，对产品微小变动与即时新闻做 Hash 缓存。
+ * 2. 向量化数据库存储：不直接存关系型数据，改存 Embedding 向量，以极低延迟加速 Competitive Radar 的语义匹配。
  */
 
 const apiKey = ""; // 运行环境会自动注入，保持为空字符串
@@ -42,8 +46,8 @@ const RESPONSE_SCHEMA = {
                     macro_modifiers: {
                         type: "OBJECT",
                         properties: {
-                            burn_rate_multiplier: { type: "NUMBER" },
-                            funding_difficulty: { type: "NUMBER" }
+                            tech_debt_multiplier: { type: "NUMBER" },
+                            survival_threshold: { type: "NUMBER" }
                         }
                     }
                 }
@@ -139,7 +143,7 @@ async function syncDailyMarketDrift() {
     // 遍历行业影响
     analysis.industry_impacts.forEach((impact: any) => {
         console.log(`- 行业: ${impact.industry}`);
-        console.log(`  宏观变化: 烧钱乘数 ${impact.macro_modifiers?.burn_rate_multiplier}`);
+        console.log(`  宏观变化: 生存阈值偏移 ${impact.macro_modifiers?.survival_threshold}`);
         const v = impact.vector_perturbation || {};
         const changes = Object.keys(v).filter(k => v[k] !== 0).map(k => `${k}: ${v[k]}`).join(', ');
         if (changes) console.log(`  DNA 扰动: ${changes}`);

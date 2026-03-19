@@ -3,11 +3,12 @@
  * 12-Dimensional Gravity Sandbox Model
  */
 
-// 12-D Normalized Vector (0.0 - 1.0)
-export type Vector12D = [
+// 13-D Normalized Vector (0.0 - 1.0)
+export type Vector13D = [
   number, number, number, number, // Product Core: Performance, Depth, Interaction, Stability
   number, number, number, number, // Market: Friction, Unique, Social, Consistency
-  number, number, number, number  // Future: Ecosystem, Barriers, Global, Curve
+  number, number, number, number, // Future: Ecosystem, Barriers, Global, Curve
+  number                          // GTM: Awareness (感知率)
 ]
 
 export const DIM = {
@@ -26,6 +27,8 @@ export const DIM = {
   BARRIER: 9,
   GLOBAL: 10,
   CURVE: 11,
+  // GTM (D13)
+  AWARENESS: 12,
 } as const
 
 /**
@@ -33,7 +36,7 @@ export const DIM = {
  */
 export interface AgentDNA {
   id: string
-  vector: Vector12D
+  vector: Vector13D
   resonance: number // Cached result from last collision
   isOutlier?: boolean // 黑天鹅样本标记 (从调研文档极端案例生成)
 }
@@ -43,11 +46,12 @@ export interface AgentDNA {
  */
 export interface ProductVector {
   name: string
-  vector: Vector12D
+  vector: Vector13D
   price: number // Maps to index 0 (v_price)
 }
 
 export type CompanyStage = 'SEED' | 'MVP' | 'PMF' | 'SCALE' | 'IPO' | 'TITAN'
+export type TeamSize = 'SOLO' | 'STARTUP' | 'ENTERPRISE'
 
 /**
  * Business Model: Market Resolution Tiers
@@ -67,20 +71,19 @@ export const TIER_LIMITS: Record<UserTier, { maxAgents: number; maxAuditsPerWeek
 export interface SandboxState {
   id: string
   tier: UserTier // Current simulation resolution tier
-  weekNumber: number
-  cash: number
-  burnRate: number // Monthly base operating cost (user defined)
+  epoch: number  // T+0, T+1, T+2
+  teamSize: TeamSize // Background resource constraint
   techDebt: number
   currentStage: CompanyStage
-  productVector: Vector12D
+  productVector: Vector13D
   agents: AgentDNA[] // The 10,000 population
   
   // Statistical snapshots
   metrics: {
     avgResonance: number
     conversionRate: number
-    mrr: number
-    churnRate: number
+    earningPotential: number // number of users with R > 0.8
+    survivalRate: number // survival probability based on metrics & debt
   }
 
   // Strategic Assets (System 2)
@@ -89,6 +92,7 @@ export interface SandboxState {
     backlog: string
     marketFeedback: string
     stressTestReport: string
+    competitiveRadar?: string
   }
 }
 
@@ -96,10 +100,10 @@ export interface SandboxState {
  * Seed Definition for Population Generation (Dual-Track)
  */
 export interface PopulationSeed {
-  mean: Vector12D     // 统计学中心点 (Manual Input + AI Inference)
-  std: Vector12D      // 分布方差 (细节缺失程度)
-  weights: Vector12D  // 决策权重 (Decision Weight Distribution)
-  outliers: Vector12D[] // 调研文档中的极端负面/正面案例
+  mean: Vector13D     // 统计学中心点 (Manual Input + AI Inference)
+  std: Vector13D      // 分布方差 (细节缺失程度)
+  weights: Vector13D  // 决策权重 (Decision Weight Distribution)
+  outliers: Vector13D[] // 调研文档中的极端负面/正面案例
   evidences?: Record<string, string> // 审计证据追溯 (维度 -> 证据原文)
 }
 

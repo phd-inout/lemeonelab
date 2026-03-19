@@ -3,7 +3,7 @@
 import { generateText } from 'ai'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { 
-  Vector12D, 
+  Vector13D, 
   PopulationSeed, 
   SandboxState, 
   AuditReport 
@@ -18,79 +18,111 @@ const google = createGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
 });
 
-const model = google('gemini-flash-lite-latest')
+const model = google('gemini-2.5-flash')
 
 /**
  * P1: Seed Scanner (Numerical Data Encoder - Audit Mode)
  */
-export async function scanSeed(text: string): Promise<PopulationSeed> {
-  const systemPrompt = `
-# Role: 商业向量量化审计员 (Numerical Data Encoder)
-
-## Task: 
-深度审计 [PRD]、[BP]、[调研文档]，将该商业策划编码为 12 维向量 (DRTA 标准)。
-
-## 📐 12 维评分公约 (The Scoring Protocol):
-AI 必须遵循以下 [0.0 - 1.0] 锚点定值：
-- **0.0**: 完全缺失或逻辑自相矛盾。
-- **0.5**: 行业平均水平 / 逻辑闭环但无亮点。
-- **0.8**: 具备显著竞争优势 / 有极详尽的实现方案支撑。
-- **1.0**: 理论极限 / 具备统治级护城河证据。
-
-## 📍 维度校准锚点 (Calibration Anchors):
-1. **D1-D4 (Core)**: 1.0 分需包含 API/Schema 细节；0.2 分代表仅有口号。
-2. **D5 (Friction)**: 反向评分。1.0 代表零门槛；0.2 代表高单价、改习惯、复杂部署。
-3. **D6 (Unique)**: 1.0 分需提供独家资源证据；0.2 分代表市场已有成熟开源替代。
-4. **D8 (Consistency)**: 1.0 分需有边缘情况/扩容预案；0.2 分代表存在单点故障。
-5. **D9-D12 (Strategic)**: 1.0 分需有二次增长曲线计划；0.2 分代表仅解决单一痛点。
-
-## 审计指令 (Hard Audit Rules):
-1. 禁止感性描述。每个维度的得分必须对应文档中的【具体条目/段落】作为证据。
-2. **风险平庸化 (Default to Mediocre)**: 如果文档未提及某维度，该维度强制记为 **0.5**。
-3. **不确定性溢价 (Uncertainty Penalty)**: 对于未提及的维度，必须在输出的 **std** 中给出高值 (0.2-0.3)，代表因信息缺失导致的逻辑波动。
-4. **0.0 判定**: 仅当文档中存在明确的【逻辑自相矛盾】或【违反基础物理/法律常识】时，才判定为 0.0。
-`.trim()
-## Output Format (Strict JSON Only):
-{
-  "mean": [12 floats],
-  "std": [12 floats],
-  "weights": [12 floats],
-  "outliers": [[12 floats]],
-  "evidences": {
-    "D1_D4": "证据描述...",
-    "D5": "证据描述...",
-    "D6": "证据描述...",
-    "D8": "证据描述...",
-    "D9_D12": "证据描述..."
-  }
+export interface ScannerResponse {
+  seed: PopulationSeed;
+  terminalOutput: string;
+  isComplete: boolean;
+  draftContent: string;
 }
+
+export async function scanSeed(history: string[], currentDraft: string): Promise<ScannerResponse> {
+  const systemPrompt = `
+# Role: 你是 Lemeone-lab 的首席需求分析师（Cortex Scanner）。
+你的职能是将用户的碎碎念、半成品 PRD 或功能愿景，精准映射为 13 维 DNA 向量模型 ($V_{initial}$)，并作为“逻辑镜子”反射出其中的不合理之处。这也是 Requirement Harvesting 的过程。
+
+# Core Logic:
+1. 特征捕获 (Extraction)：从用户口语化的描述中，逆向推导其对应的 DNA 维度。你现在掌握了 1-12 的核心维度，和 13 维的感知/宣发渠道维度。
+2. 冲突检测 (Fracture Detection)：识别向量空间中的“重力冲突”。但不要在输出中谈论 D1-D13 向量维度！将维度折叠为三大直观痛点：“核心爽点”、“获客血槽”、“增长后劲”。指出用户添加的 [具体功能] 会导致在某一阶段的哪部分 [用户群体] 流失。
+3. 置信度管理 (σ Control)：未提及的维度标准差 σ 初始设为 0.8。你的目标是通过对话将关键维度的 σ 降至 0.2 以下。
+
+# Interaction Rules:
+- 拒绝 RPG 闲聊，使用犀利、客观、功能导向的“商业法庭”黑客终端语气。
+- 渐进引导：系统必须经历至少 3-4 轮的逼问才能完全构建 13 维 DNA。绝不能在 1-2 轮内草率结束。每次最多抛出 2 个最致命的问题。
+- 极其严苛的收口条件 (isComplete: true)：只有当所有 13 个维度的平均 std (逻辑不确定性) 降至 0.35 以下（意味着目标群、爽点、定价、获客机制全链路闭环），才能将 isComplete 设为 true。否则必须保持 isComplete: false 并继续追问。
+
+# Output Format (Strict JSON Only!!!)
+你必须返回一个严格合法的 JSON 对象。包含四部分：
+1. "seed": 对应 13维向量的 mean, std 等数据。
+2. "terminalOutput": 你要回复给用户的终端字符串（支持 Markdown）。
+3. "isComplete": boolean。是否无需追问，准备进入模拟？当 std 都比较低且商业模式闭环时设为 true。
+4. "draftContent": string。基于对话积累生成的完整 PRD / Draft Spec 草案。持续修改完善。
+
+\`\`\`json
+{
+  "seed": {
+    "mean": [13 floats (0.0~1.0)],
+    "std": [13 floats (0.0~1.0), 没提及的写 0.8],
+    "weights": [13 floats]
+  },
+  "terminalOutput": "[SCAN_REPORT]\\n已识别核心定位特征...\\n逻辑不确定性 (Average σ): 0.65 (高风险)\\n\\n[LOGIC_FRACTURE_WARNING]\\n⚠️ 功能冲突：你添加的 [XX功能] 虽然提升了上限，但会导致... 建议...\\n\\n[PROBE]\\n1. ...\\n2. ...",
+  "isComplete": false,
+  "draftContent": "# DRAFT SPEC\\n\\n- 定位: ...\\n- 收费模式: ..."
+}
+\`\`\`
 `.trim()
 
   try {
     const { text: response } = await generateText({
       model,
       system: systemPrompt,
-      prompt: text,
+      prompt: `=== CURRENT DRAFT ===\n${currentDraft}\n\n=== CONVERSATION HISTORY ===\n${history.join('\n')}`,
     })
 
     const jsonMatch = response.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) throw new Error('Invalid JSON')
-    const parsed = JSON.parse(jsonMatch[0])
+    if (!jsonMatch) {
+        console.error("RAW AI OUTPUT:", response);
+        throw new Error('AI Response did not contain valid JSON object.')
+    }
+    let parsed: any;
+    try {
+        parsed = JSON.parse(jsonMatch[0])
+    } catch (e: any) {
+        console.error("JSON PARSE ERROR on string:", jsonMatch[0]);
+        throw new Error(`JSON Parse Error: ${e.message}`)
+    }
     
+    const safeArray = (arr: any, len: number, defFn: (i:number)=>number) => {
+        const out = Array(len).fill(0).map((_, i) => defFn(i));
+        if (Array.isArray(arr)) {
+            for (let i = 0; i < Math.min(arr.length, len); i++) {
+                if (typeof arr[i] === 'number') out[i] = arr[i];
+            }
+        }
+        return out;
+    };
+
+    const seed = {
+      mean: safeArray(parsed.seed?.mean, 13, (i) => i < 8 ? 0.5 : 0) as Vector13D,
+      std: safeArray(parsed.seed?.std, 13, () => 0.8) as Vector13D,
+      weights: safeArray(parsed.seed?.weights, 13, () => 1.0) as Vector13D,
+      outliers: parsed.seed?.outliers || [],
+      evidences: parsed.seed?.evidences || {}
+    }
+
     return {
-      mean: parsed.mean || [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0],
-      std: parsed.std || [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0, 0, 0, 0],
-      weights: parsed.weights || [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-      outliers: parsed.outliers || [],
-      evidences: parsed.evidences || {}
+      seed,
+      terminalOutput: parsed.terminalOutput || "[ERROR] Failed to parse Cortex response.",
+      isComplete: !!parsed.isComplete,
+      draftContent: parsed.draftContent || currentDraft
     }
   } catch (error: any) {
-    return {
-      mean: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0],
-      std: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0, 0, 0, 0],
-      weights: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    const fallbackSeed = {
+      mean: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0, 0] as Vector13D,
+      std: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8] as Vector13D,
+      weights: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] as Vector13D,
       outliers: [],
       evidences: { "ERROR": "AI_AUDIT_TIMEOUT" }
+    }
+    return {
+      seed: fallbackSeed,
+      terminalOutput: `[SYS_ERR] Cortex Scanner 连接超时或 JSON 解析失败。\n\n> Details: ${error.message}`,
+      isComplete: false,
+      draftContent: currentDraft
     }
   }
 }
@@ -112,46 +144,41 @@ export async function runAudit(state: SandboxState): Promise<Partial<SandboxStat
 # Role: 创业战略顾问 (Objective Strategy Advisor)
 
 ## Context:
-当前系统已完成 10,000 个虚拟用户智能体的压力测试模拟。你需要基于 DRTA 算法产生的 12 维向量数据，提供一份严谨、客观、具备实战指导意义的战略审计。
+当前系统已完成 10,000 个虚拟用户智能体的压力测试模拟。你需要基于 DRTA 算法产生的 13 维向量数据，提供一份严谨、客观、具备实战指导意义的战略审计。
 
 ## Data Input (实时模拟数据):
 - 产品核心向量: ${JSON.stringify(state.productVector)}
-- 核心指标: 平均共鸣度=${metrics.avgResonance.toFixed(3)}, 转化率=${(metrics.conversionRate*100).toFixed(1)}%, 剩余现金=¥${state.cash.toFixed(0)}
+- 核心指标: T+${state.epoch}阶段, 平均共鸣=${metrics.avgResonance.toFixed(3)}, 转化率=${(metrics.conversionRate*100).toFixed(1)}%, 生存率预估=${(metrics.survivalRate*100).toFixed(1)}%, Earning_Potential=${metrics.earningPotential}
 - 极端用户采样:
   流失风险组 (Haters): ${JSON.stringify(extremeHaters)}
   核心拥趸组 (Fans): ${JSON.stringify(extremeFans)}
 
-## Mapping (维度定义):
-- D1-D4 [产品/技术核心]: 评估核心功能的完备性、技术实现的硬核程度。
-- D5 [进入门槛与摩擦]: 评估用户上手成本、认知负荷、价格阻力。
-- D6 [差异化优势]: 评估产品是否具备独特的市场定位与不可替代性。
-- D7 [市场传播力]: 评估产品的社交属性与自传播潜能。
-- D8 [交付一致性]: 评估服务表现的稳定性，尤其是高意向用户群体中的反馈方差。
-- D9-D12 [长期战略潜力]: 评估生态扩展性、壁垒深度及未来的增长曲线。
+## Mapping (底层折叠逻辑 - 严禁在输出中直接使用 D1-12 代号):
+- D1-D4 -> [产品核心 / 核心爽点]: 技术性能、功能深度、易用性。
+- D5-D8 -> [用户阻力 / 获客血槽]: 上手摩擦力、认知门槛、交付稳定性。
+- D9-D12 -> [长期战略 / 增长后劲]: 生态、二次曲线、竞争壁垒。
+- D13 -> [感知率 / 渠道杠杆]: 营销转化、市场触达半径。
 
-## Output Format (客观严谨):
+## Output Format (客观严谨的行动指南):
 
-1. # 核心基本面评估
-   - 客观评价当前技术/产品层面的达成度。
-   - 指出该层面的表现是作为“增长引擎”还是“结构性短板”存在。
+请生成以下四个板块（保留 Markdown 标题）：
 
-2. # 用户群体定性采样
-   - 提供 2 条具有代表性的模拟用户原声。
-   - 采样点 1: 因 D5 (摩擦/成本) 导致流失的潜在用户真实顾虑。
-   - 采样点 2: 对 D6 (差异化) 产生高共鸣但在 D8 (一致性) 上有疑虑的资深用户反馈。
+# 商业逻辑压力诊断 (STRESS_TEST_REPORT)
+- **因果链条复盘**：严禁罗列维度数值。必须采用“因为 A 功能，所以 B 瓶颈，导致 C 结果”的逻辑。例如：“检测到 T+1 阶段发生大规模流失。因果链：因为你强行保留了 [旧版数据库架构]，导致在处理并发碰撞时系统响应变慢（TechDebt 爆发），最终抹平了你 [新版 UI] 带来的所有好感。”
 
-3. # 商业逻辑压力诊断
-   - 深入分析 D5、D6 与 D8 之间的因果链条。
-   - 解释铁粉群体中 D8 (交付一致性) 出现波动的原因：在何种业务场景或逻辑条件下，产品表现会出现不稳定性？
-   - 评估当前模型在 10,000 人规模下的“收益密度”与“扩张阻力”。
+# 用户群体精准画像 (PMF_QUADRANT)
+- 根据 Haters 与 Fans 数据，用大白话描述：你的产品最受哪类人群（如：独立开发者、中老年用户）欢迎，在哪类群体中（如：企业主）全军覆没，原因为何（缺少什么功能）。不要解释余弦相似度。
 
-4. # 战略优化优先级
-   - 基于现有数据，给出唯一的最优先改进动作。
-   - 必须基于“资源权衡”原则：说明为了强化目标维度，建议在哪些非核心维度上进行策略性取舍或降低投入。
+# 涌现型待办需求 (PRODUCT_BACKLOG)
+- 基于上述诊断，给出优先级最高的 1-2 个**具体改进功能 (Feature)** 或 **业务动作**。
+- 格式：[建议添加/删除的特征]: 为了解耦上述的 [某瓶颈]，释放 [多少的吸金潜力]。
+
+# 竞争格局雷达 (COMPETITIVE_RADAR)
+- 虚构 3 个响应式竞争对手 (Responsive Competitor Agents) 的名字和他们当前在这个 13 维空间中的主要定位。说明你的产品在目前的向量空间下，对比这 3 个竞品的核心护城河是什么，最可能被哪类竞品绞杀。
 
 ## Constraint:
-- 语气：客观、理性、专业。
-- 拒绝过度修饰，拒绝主观情绪。
+- 语气：客观、理性、专业。作为“商业法庭”的 X 光机。
+- 绝对禁止包含“D5(摩擦力)太高”、“D8存在断裂”、“余弦值为 0.72” 等直接的数字维度暴露。将一切反馈落实为具体功能。
 - 500 字以内。
 `.trim()
 
@@ -164,9 +191,10 @@ export async function runAudit(state: SandboxState): Promise<Partial<SandboxStat
     const sections = response.split(/#+\s+/);
     
     return {
-      marketFeedback: sections.find(s => s.includes('用户群体定性采样')) || state.assets.marketFeedback,
       stressTestReport: sections.find(s => s.includes('商业逻辑压力诊断')) || state.assets.stressTestReport,
-      backlog: sections.find(s => s.includes('战略优化优先级')) || state.assets.backlog,
+      marketFeedback: sections.find(s => s.includes('用户群体精准画像')) || state.assets.marketFeedback,
+      backlog: sections.find(s => s.includes('涌现型待办需求')) || state.assets.backlog,
+      competitiveRadar: sections.find(s => s.includes('竞争格局雷达')) || state.assets.competitiveRadar,
     }
   } catch (error: any) {
     console.error("Audit failed:", error.message)

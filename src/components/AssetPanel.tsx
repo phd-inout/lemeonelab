@@ -26,6 +26,7 @@ const AssetPanel: React.FC = () => {
     { id: 'backlog', label: 'BACKLOG' },
     { id: 'marketFeedback', label: 'FEEDBACK' },
     { id: 'stressTestReport', label: 'AUDIT' },
+    { id: 'competitiveRadar', label: 'RADAR' },
   ];
 
   return (
