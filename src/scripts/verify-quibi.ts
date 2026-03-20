@@ -33,51 +33,43 @@ async function verifyQuibi() {
     const scanResult = await scanSeed([quibiDocs], "");
     const seed = scanResult.seed;
     
-    console.log("\n--- AI 提取的 13D 商业基因 ---");
-    console.log(`D1-D4 (Core):    [${seed.mean.slice(0, 4).map(v => v.toFixed(2)).join(', ')}]`);
-    console.log(`D5 (Friction):   ${seed.mean[4].toFixed(2)} (1.0=Zero Friction, low score = High Friction)`);
-    console.log(`D6 (Unique):     ${seed.mean[5].toFixed(2)}`);
-    console.log(`D7 (Social):     ${seed.mean[6].toFixed(2)}`);
-    console.log(`D8 (Consistency):${seed.mean[7].toFixed(2)}`);
-    console.log(`D13 (Awareness): ${seed.mean[12]?.toFixed(2) || 'N/A'}`);
-    
-    console.log("\n--- 提取的黑天鹅样本 ---");
-    console.log(`Outliers count: ${seed.outliers?.length || 0}`);
-    
-    if (seed.evidences) {
-        console.log("\n--- AI 审计证据 ---");
-        Object.entries(seed.evidences).forEach(([k, v]) => {
-            console.log(`[${k}]: ${v}`);
-        });
-    }
+    console.log("\n--- AI 提取及校准后的 13D 商业基因 (Quibi) ---");
+    console.log(`D1-D4 (Core):    [${seed.mean.slice(0, 4).map((v: number) => v.toFixed(2)).join(', ')}]`);
+    console.log(`D5 (Friction):   ${seed.mean[4].toFixed(2)} (预期极低，代表强制付费的高门槛)`);
+    console.log(`D7 (Social):     ${seed.mean[6].toFixed(2)} (预期极低，严禁截屏/分享)`);
+    console.log(`D13 (Awareness): ${seed.mean[12]?.toFixed(2) || 'N/A'} (预期极高，超级碗广告)`);
 
-    // Set up Sandbox
-    console.log("\n2️⃣ [SIMULATION] Generating 10,000 Agents & Starting T+24 Evolution...");
-    const agents = generatePopulation(seed, 10000);
+    // 2️⃣ [SIMULATION] Generating 100,000 Agents & Starting T+24 Evolution...
+    // 引入“市场怀疑论”：手动增加群体基因的标准差，模拟一个多样化、不完美契合的市场
+    const marketSeed = { ...seed };
+    marketSeed.std = [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2]; // 显著增加差异性
+    
+    const agents = generatePopulation(marketSeed, 100000);
     
     let state: SandboxState = {
         id: uuidv4(),
-        tier: 'PRO' as UserTier,
+        tier: 'ENTERPRISE' as UserTier,
         epoch: 0,
-        cash: 17500000, // Scaled down from $1.75B for simulation bounds
-        burnRate: 800000, // Massive enterprise burn rate
+        cash: 17500000, 
+        burnRate: 800000, 
         techDebt: 0,
         currentStage: 'SEED',
         productVector: seed.mean,
         agents,
-        metrics: { avgResonance: 0, conversionRate: 0, earningPotential: 0, survivalRate: 1.0 },
+        metrics: { avgResonance: 0, conversionRate: 0, earningPotential: 0, survivalRate: 1.0, activePaidUserCount: 0 },
         assets: { proposal: '', backlog: '', marketFeedback: '', stressTestReport: '', journal: '' },
         history: []
     };
 
-    console.log("\nEpoch\tUsers\t\tCash\t\tSurvival%");
-    console.log("--------------------------------------------------");
+    console.log("\nEpoch\tActive Users\tPaid Users\tConv %\tCash\t\tSurvival%");
+    console.log("----------------------------------------------------------------------------------");
 
     for (let i = 1; i <= 24; i++) {
         state = await stepSimulation(state);
-        const { earningPotential, survivalRate } = state.metrics;
+        const { earningPotential, activePaidUserCount, survivalRate } = state.metrics;
+        const convRate = (earningPotential / activePaidUserCount) * 100 || 0;
         
-        console.log(`T+${state.epoch}\t${earningPotential}\t\t$${Math.floor(state.cash).toLocaleString()}\t\t${(survivalRate * 100).toFixed(1)}%`);
+        console.log(`T+${state.epoch}\t${activePaidUserCount.toLocaleString()}\t\t${earningPotential.toLocaleString()}\t\t${convRate.toFixed(1)}%\t$${Math.floor(state.cash).toLocaleString()}\t\t${(survivalRate * 100).toFixed(1)}%`);
         
         if (state.cash <= 0) {
             console.log(`\n💥 [BANKRUPT] Quibi ran out of cash at Epoch T+${state.epoch} (Approx. ${Math.floor(state.epoch/4)} months).`);

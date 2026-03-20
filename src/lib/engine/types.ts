@@ -1,39 +1,26 @@
 /**
  * Lemeone-lab 2.0: Core DNA & Vector Types
- * 12-Dimensional Gravity Sandbox Model
- */
+ // 14-D Normalized Vector (0.0 - 1.0)
+ export type Vector14D = [
+   number, number, number, number, // Product Core: D1-D4
+   number,                         // D5: Entry Ease (1.0 = Smooth, 0.0 = Hard)
+   number,                         // D6: Monetization Pressure (1.0 = Mandatory, 0.0 = Optional)
+   number, number, number,         // Market: Unique, Social, Consistency (D7-D9)
+   number, number, number, number, // Future: Ecosystem, Barriers, Global, Curve (D10-D13)
+   number                          // D14: Awareness
+ ]
 
-// 12-D Normalized Vector (0.0 - 1.0)
-export type Vector12D = [
-  number, number, number, number, // Product Core: Performance, Depth, Interaction, Stability
-  number, number, number, number, // Market: Friction, Unique, Social, Consistency
-  number, number, number, number  // Future: Ecosystem, Barriers, Global, Curve
-]
+ export const DIM = {
+   PERF: 0, DEPTH: 1, INTERACT: 2, STABLE: 3,
+   ENTRY: 4,      // D5
+   MONETIZE: 5,   // D6
+   UNIQUE: 6,     // D7
+   SOCIAL: 7,     // D8
+   CONSISTENCY: 8, // D9
+   ECO: 9, BARRIER: 10, GLOBAL: 11, CURVE: 12,
+   AWARENESS: 13  // D14
+ } as const
 
-export type Vector13D = [
-  ...Vector12D,
-  number // D13: Perception / Awareness
-]
-
-export const DIM = {
-  // Product Core (D1-D4)
-  PERF: 0,
-  DEPTH: 1,
-  INTERACT: 2,
-  STABLE: 3,
-  // Market (D5-D8)
-  FRICTION: 4,
-  UNIQUE: 5,
-  SOCIAL: 6,
-  CONSISTENCY: 7,
-  // Future (D9-D12)
-  ECO: 8,
-  BARRIER: 9,
-  GLOBAL: 10,
-  CURVE: 11,
-  // Awareness (D13)
-  AWARENESS: 12
-} as const
 
 /**
  * Agent DNA: The atomic unit of the 10,000 population

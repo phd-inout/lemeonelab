@@ -37,17 +37,21 @@ async function verifySlack() {
     const scanResult = await scanSeed([slackDocs], "");
     const seed = scanResult.seed;
     
-    // 强制修正部分 AI 可能带来的后视镜偏差，确保测试条件的严格性
-    seed.mean[12] = 0.15; // 内测期的较高初始曝光 (8000家公司)，但不是 100% 全球皆知
-    // 模拟 Slack 精妙的摩擦力设计：够简单能拉新，但 1w 条消息限制又构成了支付门槛 (约 0.75 意味着 25%+5% = 30% 的变现率)
-    seed.mean[4] = 0.75;  
+    // 强制转换为 14D
+    const slackVector: Vector14D = [
+        0.95, 0.90, 0.85, 0.90, // Core
+        0.90,                   // D5: Entry Ease (Easy to sign up)
+        0.75,                   // D6: Monetize Pressure (10k message limit anxiety)
+        0.95, 0.90, 0.85,       // Market: Unique, Social, Consistency
+        0.80, 0.70, 0.60, 0.50, // Future
+        0.15                    // D14: Awareness
+    ];
+    seed.mean = slackVector;
 
-    console.log("\n--- AI 提取及校准后的 13D 商业基因 ---");
+    console.log("\n--- AI 提取及校准后的 14D 商业基因 ---");
     console.log(`D1-D4 (Core):    [${seed.mean.slice(0, 4).map((v: number) => v.toFixed(2)).join(', ')}]`);
-    console.log(`D5 (Friction):   ${seed.mean[4].toFixed(2)} (中低摩擦，锁定 30% 变现率)`);
-    console.log(`D6 (Unique):     ${seed.mean[5].toFixed(2)}`);
-    console.log(`D7 (Social):     ${seed.mean[6].toFixed(2)} (内部病毒循环)`);
-    console.log(`D13 (Awareness): ${seed.mean[12].toFixed(2)} (内测光环起步)`);
+    console.log(`D5 (Entry Ease): ${seed.mean[4].toFixed(2)} (准入顺滑)`);
+    console.log(`D6 (Monetize):   ${seed.mean[5].toFixed(2)} (变现压力)`);
 
     console.log("\n2️⃣ [SIMULATION] Generating 100,000 Agents (Enterprise Scale) & Starting 48-Week Evolution...");
     const popSize = 100000;
