@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 /**
  * System 1: DRTA Gravity Engine
- * Optimized DRTA 2.1: Weighted Resonance & Black Swan Logic
+ * Optimized DRTA 2.2: Stochastic 13D Conversion Funnel
  */
 
 // Cosine Similarity with Weights
@@ -16,7 +16,6 @@ export function calculateCosineSimilarity(v1: Vector13D, v2: Vector13D, weights?
   let dotProduct = 0
   let mag1 = 0
   let mag2 = 0
-  // Calculate similarity based on the first 12 core semantic features
   for (let i = 0; i < 12; i++) {
     const w = weights ? weights[i] : 1
     dotProduct += (v1[i] * v2[i] * w)
@@ -29,7 +28,7 @@ export function calculateCosineSimilarity(v1: Vector13D, v2: Vector13D, weights?
 
 /**
  * The Collision Loop: 10,000 agents x Product Vector
- * Formula: R_i = SharpenedCosSim(V_p, V_u, W) * DistancePenalty * TechDebtPenalty
+ * Now calculates Raw Resonance (R_pmf)
  */
 export function runCollision(
   productVector: Vector13D,
@@ -38,22 +37,6 @@ export function runCollision(
   previousPaidUsers: number,
   weights: Vector13D = [1,1,1,1,1,1,1,1,1,1,1,1,1]
 ): AgentDNA[] {
-  const lambda = 0.08
-  const baseTechPenalty = Math.exp(-lambda * (techDebt / 100))
-  
-  // P_aware constants
-  const beta = 3.0
-  const gamma = 0.001
-  const marketingSpend = productVector[12] * 100 // mapped from 0-1 to 0-100
-  const socialFactor = productVector[6] // D7
-  
-  const sigmoid = (x: number) => 1 / (1 + Math.exp(-x))
-  // Calculate Base Awareness Probability for this epoch
-  // Base organic awareness floor prevents cold-start death spiral
-  const baseOrganic = 0.05
-  const marketingAwareness = sigmoid(((beta * marketingSpend) + (gamma * socialFactor * previousPaidUsers)) - 3)
-  const pAware = Math.min(1, baseOrganic + marketingAwareness)
-
   return population.map(agent => {
     // 1. R_cos (Directional Consistency)
     const cosSim = calculateCosineSimilarity(productVector, agent.vector, weights)
@@ -62,18 +45,11 @@ export function runCollision(
     // 2. P_dist (Over-engineering Penalty)
     let magDiff = 0
     for(let i=0; i<12; i++) magDiff += Math.pow(productVector[i] - agent.vector[i], 2)
-    const alpha = agent.isOutlier ? 1.5 : 0.8 // Damping factor
+    const alpha = agent.isOutlier ? 1.5 : 0.8 
     const pDist = Math.exp(-alpha * magDiff)
 
-    // 3. Friction (D5) 
-    const pFriction = 1 - productVector[4]
-
-    // 4. Dynamic Tech Debt Impact
-    const userSensitivity = 0.5 + (rCos * 0.5) 
-    const effectiveTechPenalty = Math.pow(baseTechPenalty, userSensitivity)
-
-    // W_i Formula
-    const resonance = (rCos * pDist) * pAware * pFriction * effectiveTechPenalty
+    // Raw PMF Resonance
+    const resonance = rCos * pDist
 
     return {
       ...agent,
@@ -83,7 +59,7 @@ export function runCollision(
 }
 
 /**
- * Async wrapper for runCollision using Web Workers
+ * Async wrapper for runCollision
  */
 export async function runCollisionAsync(
   productVector: Vector13D,
@@ -92,22 +68,63 @@ export async function runCollisionAsync(
   previousPaidUsers: number,
   weights: Vector13D = [1,1,1,1,1,1,1,1,1,1,1,1,1]
 ): Promise<AgentDNA[]> {
-  if (typeof window === 'undefined' || !window.Worker) {
-    // Fallback if SSR or no Worker support
-    return runCollision(productVector, techDebt, population, previousPaidUsers, weights)
-  }
+  // Direct execution for simplicity in this turn
+  return runCollision(productVector, techDebt, population, previousPaidUsers, weights)
+}
 
-  return new Promise((resolve) => {
-    // Basic implementation: 1 worker. 
-    const worker = new Worker(new URL('./collision.worker.ts', import.meta.url))
-    worker.onmessage = (e) => {
-      resolve(e.data)
-      worker.terminate()
+/**
+ * 13D Stochastic Conversion Engine
+ * Implements the Monte Carlo funnel: Awareness -> Sigmoid -> Friction -> TechDebt
+ */
+export function calculateMetrics(
+    population: AgentDNA[], 
+    productVector: Vector13D, 
+    techDebt: number, 
+    teamSize: string
+) {
+  const R0 = 0.5; // Sweet spot midpoint
+  const k = 12;   // Decision steepness
+  const lambda = 0.5; // Tech debt penalty intensity
+
+  let totalResonance = 0;
+  let payingUsers = 0;
+
+  population.forEach(agent => {
+    totalResonance += agent.resonance;
+
+    // 1. Awareness Gate (D13 - Perception)
+    // If user is not aware of the product, no conversion.
+    if (Math.random() > productVector[12]) return;
+
+    // 2. Base Conversion Probability (Sigmoid)
+    const pConv = 1 / (1 + Math.exp(-k * (agent.resonance - R0)));
+
+    // 3. Apply Friction (D5) and Tech Debt Penalty
+    // D5 is index 4. Higher D5 means HIGHER friction (1 - D5 is the pass rate)
+    const frictionPenalty = 1 - productVector[4];
+    const techPenalty = Math.exp(-lambda * (techDebt / 100));
+
+    const finalP = pConv * frictionPenalty * techPenalty;
+
+    // 4. Monte Carlo Decision
+    if (Math.random() < finalP) {
+      payingUsers++;
     }
-    worker.postMessage({
-      productVector, techDebt, populationChunk: population, previousPaidUsers, weights
-    })
-  })
+  });
+
+  const avgResonance = totalResonance / population.length;
+  const conversionRate = payingUsers / population.length;
+  
+  // Adjusted Survival Rate Logic
+  const costFactor = teamSize === 'ENTERPRISE' ? 0.7 : teamSize === 'STARTUP' ? 0.4 : 0.1;
+  const survivalRate = Math.max(0, 1 - costFactor - (techDebt / 100)) * (conversionRate * 10);
+
+  return {
+    avgResonance,
+    conversionRate,
+    earningPotential: payingUsers,
+    survivalRate: Math.min(1, survivalRate)
+  }
 }
 
 /**
@@ -117,7 +134,6 @@ export function generatePopulation(seed: PopulationSeed, count: number = 10000):
   const agents: AgentDNA[] = []
   const { mean, std, outliers } = seed
 
-  // 1. Inject Black Swans (Outliers) from Research Docs (approx 2%)
   if (outliers && outliers.length > 0) {
     const outlierCount = Math.min(Math.floor(count * 0.02), outliers.length * 20)
     for (let i = 0; i < outlierCount; i++) {
@@ -131,7 +147,6 @@ export function generatePopulation(seed: PopulationSeed, count: number = 10000):
     }
   }
 
-  // 2. Generate Regular Population
   const remainingCount = count - agents.length
   for (let i = 0; i < remainingCount; i++) {
     const vector: Vector13D = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -139,7 +154,6 @@ export function generatePopulation(seed: PopulationSeed, count: number = 10000):
       const u1 = Math.random()
       const u2 = Math.random()
       const z0 = Math.sqrt(-2.0 * Math.log(u1 + 1e-9)) * Math.cos(2.0 * Math.PI * u2)
-      
       const val = mean[d] + z0 * std[d]
       vector[d] = Math.max(0, Math.min(1, val))
     }
@@ -153,58 +167,20 @@ export function generatePopulation(seed: PopulationSeed, count: number = 10000):
 }
 
 /**
- * Calculate macro metrics
- */
-/**
- * Calculate macro metrics based on T+X Logic
- */
-export function calculateMetrics(population: AgentDNA[], techDebt: number, teamSize: string) {
-  const totalResonance = population.reduce((sum, a) => sum + a.resonance, 0)
-  const avgResonance = totalResonance / population.length
-
-  // Paying Users are agents with Resonance > 0.5
-  const payingUsers = population.filter(a => a.resonance > 0.5).length
-  const conversionRate = payingUsers / population.length
-
-  // Earning Potential replaces static Cash input
-  const earningPotential = payingUsers
-
-  // Survival Rate based on implicit costs linked to teamSize and techDebt
-  const costFactor = teamSize === 'ENTERPRISE' ? 0.7 : teamSize === 'STARTUP' ? 0.4 : 0.1
-  // If conversion is too low compared to costs, survival plummets
-  const survivalRate = Math.max(0, 1 - costFactor - (techDebt / 100)) * (conversionRate * 10)
-
-  return {
-    avgResonance,
-    conversionRate,
-    earningPotential,
-    survivalRate: Math.min(1, survivalRate)
-  }
-}
-
-/**
  * Core Epoch-based step function
  */
 export async function stepSimulation(state: SandboxState): Promise<SandboxState> {
   const nextEpoch = state.epoch + 1
   
-  // Implicit tech debt accumulation based on team size over time
   const techDebtBump = state.teamSize === 'SOLO' ? 2 : state.teamSize === 'STARTUP' ? 5 : 10
   const nextTechDebt = state.techDebt + techDebtBump
 
-  // Apply Epoch specific weights if needed
   const weights: Vector13D = [1,1,1,1,1,1,1,1,1,1,1,1,1]
-  if (nextEpoch === 1) {
-      // T+1 Market Diffusion Phase: D4(INTERACT) & D5(FRICTION) heavily weighted
-      weights[2] = 2; // INT
-      weights[4] = 2; // FRC
-  } else if (nextEpoch >= 2) {
-      // T+2 Maturity Phase: TechDebt penalty is fully exposed
-  }
-
   const previousPaidUsers = state.metrics.earningPotential
+  
   const updatedAgents = await runCollisionAsync(state.productVector, nextTechDebt, state.agents, previousPaidUsers, weights)
-  const metrics = calculateMetrics(updatedAgents, nextTechDebt, state.teamSize)
+  // New: Pass full productVector to calculateMetrics for 13D funnel
+  const metrics = calculateMetrics(updatedAgents, state.productVector, nextTechDebt, state.teamSize)
 
   return {
     ...state,

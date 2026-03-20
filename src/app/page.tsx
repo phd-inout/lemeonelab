@@ -3,15 +3,15 @@
 import { useLemeoneStore } from '@/lib/store';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
-import ParticleManifold from '@/components/ParticleManifold';
 import AssetPanel from '@/components/AssetPanel';
+import VisualizationPanel from '@/components/VisualizationPanel';
 
 const TerminalUI = dynamic(() => import('@/components/TerminalUI'), { ssr: false });
 
 export default function Home() {
   const sandboxState = useLemeoneStore(s => s.sandboxState);
   const [mounted, setMounted] = useState(false);
-  const [leftWidth, setLeftWidth] = useState(25);
+  const [leftWidth, setLeftWidth] = useState(30);
   const [rightWidth, setRightWidth] = useState(30);
 
   useEffect(() => {
@@ -119,13 +119,9 @@ export default function Home() {
       {/* 2. MAIN GRID LAYOUT */}
       <main className="flex-1 flex overflow-hidden">
         
-        {/* LEFT: Gravity Field */}
-        <aside style={{ width: `${leftWidth}%` }} className="bg-[#050505] p-4 flex flex-col gap-4 overflow-y-auto shrink-0">
-          <div className="text-[10px] text-gray-600 uppercase tracking-widest mb-2 flex justify-between">
-            <span>Market_Gravity_Field</span>
-            <span className="text-primary/50">LIVE</span>
-          </div>
-          <ParticleManifold />
+        {/* LEFT: Visualization Area (Tabs) */}
+        <aside style={{ width: `${leftWidth}%` }} className="bg-[#050505] p-2 flex flex-col overflow-hidden shrink-0">
+          <VisualizationPanel />
         </aside>
 
         {/* DRAG HANDLE 1 */}

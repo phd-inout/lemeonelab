@@ -118,7 +118,13 @@ export const useLemeoneStore = create<LemeoneStore>()(
                         journal: '# STRATEGIC DRIFT JOURNAL\n\n> System Initialize [T+0]\n> Baseline recorded.\n',
                         stressTestReport: '',
                         competitiveRadar: '# COMPETITIVE RADAR\nRun audit to generate...'
-                    }
+                    },
+                    history: [{
+                        epoch: 0,
+                        users: initialMetrics.earningPotential,
+                        resonance: initialMetrics.avgResonance,
+                        survival: initialMetrics.survivalRate
+                    }]
                 }
 
                 set({ sandboxState: initialState, isRunning: true, isInterviewing: false })
@@ -128,7 +134,6 @@ export const useLemeoneStore = create<LemeoneStore>()(
             answerInterview: async (text: string) => {
                 const { interviewHistory, draftSpec, userTier } = get()
                 const newHistory = [...interviewHistory, `User: ${text}`]
-                // NOTE: Don't pushLine the user input here — xterm already echoes it
                 
                 const { seed, terminalOutput, isComplete, draftContent } = await scanSeed(newHistory, draftSpec)
                 
@@ -171,7 +176,13 @@ export const useLemeoneStore = create<LemeoneStore>()(
                         journal: '# STRATEGIC DRIFT JOURNAL\n\n> System Initialize [T+0]\n> Baseline recorded.\n',
                         stressTestReport: '',
                         competitiveRadar: '# COMPETITIVE RADAR\nRun audit to generate...'
-                    }
+                    },
+                    history: [{
+                        epoch: 0,
+                        users: initialMetrics.earningPotential,
+                        resonance: initialMetrics.avgResonance,
+                        survival: initialMetrics.survivalRate
+                    }]
                 }
 
                 set({ 
@@ -191,7 +202,14 @@ export const useLemeoneStore = create<LemeoneStore>()(
                 
                 const sRate = nextState.metrics.survivalRate
                 const nextJournal = s.assets.journal + `\n## [EPOCH T+${nextState.epoch}]\n- **Active Paid Users**: ${nextState.metrics.earningPotential.toLocaleString()}\n- **Survival Rate**: ${(sRate * 100).toFixed(1)}%\n- **Tech Debt**: ${nextState.techDebt.toFixed(1)}%\n- **Projected MRR**: $${(nextState.metrics.earningPotential * 15).toLocaleString()}\n`
+                
                 nextState.assets.journal = nextJournal
+                nextState.history.push({
+                    epoch: nextState.epoch,
+                    users: nextState.metrics.earningPotential,
+                    resonance: nextState.metrics.avgResonance,
+                    survival: sRate
+                })
 
                 set({ sandboxState: nextState })
                 
@@ -207,7 +225,7 @@ export const useLemeoneStore = create<LemeoneStore>()(
 
                 const report = [
                     `\n${g}╔═ [EPOCH ADVANCED TO T+${nextState.epoch}] ═════════════════════════════════╗${res}`,
-                    `${g}║${res}  ACTIVE_USERS (R>0.5): ${c}${nextState.metrics.earningPotential.toLocaleString()}${res} / ${nextState.agents.length.toLocaleString()}`,
+                    `${g}║${res}  ACTIVE_USERS (Probabilistic): ${c}${nextState.metrics.earningPotential.toLocaleString()}${res} / ${nextState.agents.length.toLocaleString()}`,
                     `${g}║${res}  CONVERSION_CR:        ${b}${(nextState.metrics.conversionRate * 100).toFixed(2)}%${res}`,
                     `${g}║${res}  AVG_RESONANCE:        ${nextState.metrics.avgResonance.toFixed(4)}`,
                     `${g}║${res}  TECH_DEBT_PENALTY:    ${y}+${diffDebt.toFixed(1)}%${res} (TOTAL: ${nextState.techDebt.toFixed(1)}%)`,
