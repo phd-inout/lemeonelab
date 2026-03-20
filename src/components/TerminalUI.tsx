@@ -43,6 +43,7 @@ Input ${C.green}help${C.reset} / ${C.green}clear${C.reset} / ${C.green}exit${C.r
 
 export default function TerminalUI() {
     const termRef = useRef<HTMLDivElement>(null)
+    const inputRef = useRef<HTMLInputElement>(null)
     const xtermRef = useRef<Terminal | null>(null)
     const fitAddonRef = useRef<FitAddon | null>(null)
     const inputBufRef = useRef('')
@@ -89,7 +90,7 @@ export default function TerminalUI() {
     }, [])
 
     const showPrompt = useCallback(() => {
-        xtermRef.current?.write('\r\n> ')
+        xtermRef.current?.scrollToBottom()
     }, [])
 
     const handleCommand = useCallback(async (input: string) => {
@@ -138,7 +139,8 @@ export default function TerminalUI() {
                 }
                 break
             case 'dev':
-                print(`${C.green}[COLLISION] 执行下一周期 (Epoch) 10,000 并行压力测试...${C.reset}`)
+                const agentCount = useLemeoneStore.getState().sandboxState?.agents.length || 100
+                print(`${C.green}[COLLISION] 执行下一周期 (Epoch) ${agentCount.toLocaleString()} 并行压力测试...${C.reset}`)
                 await step()
                 break
             case 'set':
@@ -244,59 +246,10 @@ case 'stat':
         term.open(termRef.current)
         setTimeout(() => fitAddon.fit(), 100)
         xtermRef.current = term
-
-        term.writeln(`${C.cyan}${C.bold}[LAB_INIT] 实验室环境初始化完成...${C.reset}`)
-        term.writeln(`${C.gray}当前现实同步： ${C.magenta}已挂载全球新闻与实时映射引擎。${C.reset}`)
-        term.writeln(`${C.gray}内核版本： ${C.green}DRTA 2.0 (Gravity Engine)。${C.reset}`)
-        term.writeln(`${C.cyan}请输入你的商业蓝图或拖入 PRD 文档。${C.reset}`)
+        
         term.writeln(`${C.yellow}提示：描述越模糊，σ (不确定性) 越高，模拟中的现金流崩塌风险越大。${C.reset}`)
-        term.write('\r\n> ')
 
-        term.onData(e => {
-            const buf = inputBufRef.current
-            if (e === '\r') {
-                term.write('\r\n')
-                const cmd = buf
-                inputBufRef.current = ''
-                if (cmd.trim()) {
-                    const last = historyRef.current[historyRef.current.length - 1]
-                    if (cmd.trim() !== last) historyRef.current.push(cmd.trim())
-                }
-                historyIndexRef.current = -1
-                handleCommand(cmd)
-            } else if (e === '\x7F') { 
-                if (buf.length > 0) {
-                    inputBufRef.current = buf.slice(0, -1)
-                    term.write('\b \b')
-                }
-            } else if (e === '\x1b[A') { // Arrow Up
-                if (historyRef.current.length > 0) {
-                    if (historyIndexRef.current === -1) {
-                        currentInputRef.current = buf
-                    }
-                    if (historyIndexRef.current < historyRef.current.length - 1) {
-                        historyIndexRef.current++
-                        const histCmd = historyRef.current[historyRef.current.length - 1 - historyIndexRef.current]
-                        inputBufRef.current = histCmd
-                        term.write('\r> \x1b[K' + histCmd)
-                    }
-                }
-            } else if (e === '\x1b[B') { // Arrow Down
-                if (historyIndexRef.current > -1) {
-                    historyIndexRef.current--
-                    if (historyIndexRef.current === -1) {
-                        inputBufRef.current = currentInputRef.current
-                    } else {
-                        const histCmd = historyRef.current[historyRef.current.length - 1 - historyIndexRef.current]
-                        inputBufRef.current = histCmd
-                    }
-                    term.write('\r> \x1b[K' + inputBufRef.current)
-                }
-            } else if (e >= ' ') {
-                inputBufRef.current += e
-                term.write(e)
-            }
-        })
+        // Native terminal input has been migrated to the external HTML input bar below for better UX
 
         const handleResize = () => fitAddon.fit()
         window.addEventListener('resize', handleResize)
@@ -319,12 +272,62 @@ case 'stat':
 
     return (
         <div 
-            className={`w-full h-full bg-black p-2 transition-all duration-300 ${isDragging ? 'ring-2 ring-cyan-500 bg-gray-900 opacity-80' : ''}`}
+            className={`w-full h-full bg-[#0a0a0c] flex flex-col transition-all duration-300 ${isDragging ? 'ring-2 ring-cyan-500 bg-gray-900 opacity-80' : ''}`}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleFileDrop}
+            onClick={() => inputRef.current?.focus()}
         >
-            <div ref={termRef} className="w-full h-full" />
+            {/* Upper: Standard Output Log */}
+            <div className="flex-1 overflow-hidden pl-6 pr-1 pt-6 pb-2 cursor-text">
+                <div ref={termRef} className="w-full h-full" />
+            </div>
+
+            {/* Lower: Visual Input Bar */}
+            <div className="h-14 bg-black border-t border-gray-800/60 flex items-center px-6 shrink-0 font-mono text-sm relative shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-10">
+                <span className="text-cyan-500 mr-3 font-bold">{'>'}</span>
+                <input 
+                    ref={inputRef}
+                    className="flex-1 bg-transparent text-gray-200 focus:outline-none placeholder-gray-600/50"
+                    placeholder="Type your command or drop a PRD file here..."
+                    autoFocus
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            const cmd = e.currentTarget.value
+                            e.currentTarget.value = ''
+                            if (cmd.trim()) {
+                                const last = historyRef.current[historyRef.current.length - 1]
+                                if (cmd.trim() !== last) historyRef.current.push(cmd.trim())
+                                xtermRef.current?.writeln(`\r\n> ${cmd}`)
+                                historyIndexRef.current = -1
+                                handleCommand(cmd)
+                            }
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault()
+                            if (historyRef.current.length > 0) {
+                                if (historyIndexRef.current === -1) {
+                                    currentInputRef.current = e.currentTarget.value
+                                }
+                                if (historyIndexRef.current < historyRef.current.length - 1) {
+                                    historyIndexRef.current++
+                                    e.currentTarget.value = historyRef.current[historyRef.current.length - 1 - historyIndexRef.current]
+                                }
+                            }
+                        } else if (e.key === 'ArrowDown') {
+                            e.preventDefault()
+                            if (historyIndexRef.current > -1) {
+                                historyIndexRef.current--
+                                if (historyIndexRef.current === -1) {
+                                    e.currentTarget.value = currentInputRef.current
+                                } else {
+                                    e.currentTarget.value = historyRef.current[historyRef.current.length - 1 - historyIndexRef.current]
+                                }
+                            }
+                        }
+                    }}
+                />
+                <div className="text-[10px] text-gray-600 tracking-wider hidden sm:block">~/lemeone-lab (main*)</div>
+            </div>
         </div>
     )
 }

@@ -162,8 +162,8 @@ export function calculateMetrics(population: AgentDNA[], techDebt: number, teamS
   const totalResonance = population.reduce((sum, a) => sum + a.resonance, 0)
   const avgResonance = totalResonance / population.length
 
-  // Paying Users are agents with Resonance > 0.8
-  const payingUsers = population.filter(a => a.resonance > 0.8).length
+  // Paying Users are agents with Resonance > 0.5
+  const payingUsers = population.filter(a => a.resonance > 0.5).length
   const conversionRate = payingUsers / population.length
 
   // Earning Potential replaces static Cash input

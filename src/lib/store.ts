@@ -207,7 +207,7 @@ export const useLemeoneStore = create<LemeoneStore>()(
 
                 const report = [
                     `\n${g}╔═ [EPOCH ADVANCED TO T+${nextState.epoch}] ═════════════════════════════════╗${res}`,
-                    `${g}║${res}  ACTIVE_USERS (R>0.8): ${c}${nextState.metrics.earningPotential.toLocaleString()}${res} / ${nextState.agents.length.toLocaleString()}`,
+                    `${g}║${res}  ACTIVE_USERS (R>0.5): ${c}${nextState.metrics.earningPotential.toLocaleString()}${res} / ${nextState.agents.length.toLocaleString()}`,
                     `${g}║${res}  CONVERSION_CR:        ${b}${(nextState.metrics.conversionRate * 100).toFixed(2)}%${res}`,
                     `${g}║${res}  AVG_RESONANCE:        ${nextState.metrics.avgResonance.toFixed(4)}`,
                     `${g}║${res}  TECH_DEBT_PENALTY:    ${y}+${diffDebt.toFixed(1)}%${res} (TOTAL: ${nextState.techDebt.toFixed(1)}%)`,
