@@ -19,26 +19,26 @@ const C = {
 }
 
 const HELP_TEXT = `
-${C.cyan}${C.bold}LEMEONE_LAB v2.0 CLI${C.reset} ${C.gray}— Gravity Sandbox OS${C.reset}
+${C.cyan}${C.bold}LEMEONE_LAB v2.0 CLI${C.reset} ${C.gray}— 重力沙盒操作系统 (Gravity Sandbox OS)${C.reset}
 
-${C.bold}FEEDING & INITIALIZATION${C.reset}
-  ${C.green}scan "<seed>"${C.reset}   - Initialize from text or drop a BP/PRD file.
-  ${C.green}tier <tier>${C.reset}   - Upgrade license (FREE, PRO, ULTRA, ENTERPRISE).
+${C.bold}初始化${C.reset}
+  ${C.green}scan "<描述>"${C.reset}   - 从文本或文件初始化商业基因扫描
+  ${C.green}tier <等级>${C.reset}     - 升级分辨率 (FREE, PRO, ULTRA, ENTERPRISE)
 
-${C.bold}SIMULATION${C.reset}
-  ${C.green}dev${C.reset}            - Advance to next Market Epoch (T+1, T+2), triggers 10,000-agent collision.
-  ${C.green}reset${C.reset}          - Wipe current simulation state.
+${C.bold}模拟运行${C.reset}
+  ${C.green}dev${C.reset}              - 推进至下一市场周期 (Epoch)，触发万次碰撞
+  ${C.green}reset${C.reset}            - 清除当前模拟状态
 
-${C.bold}VECTOR TUNING${C.reset}
-  ${C.green}set <dim> <val>${C.reset}   - Adjust 13D dimensions (perf, depth, interact, stable...).
-  ${C.green}feature "<desc>"${C.reset} - Map a natural language feature to vector space.
-  ${C.green}team <size>${C.reset}      - Set resource constraint (SOLO, STARTUP, ENTERPRISE).
+${C.bold}向量调参${C.reset}
+  ${C.green}set <dim> <val>${C.reset}  - 调整 14D 维度 (PERF, DEPTH, INTERACT, STABLE, ENTRY, MONETIZE...)
+  ${C.green}feature "<描述>"${C.reset} - 将自然语言功能映射到向量空间
+  ${C.green}team <规模>${C.reset}      - 设置资源约束 (SOLO, STARTUP, GROWTH, ENTERPRISE)
 
-${C.bold}DIAGNOSTICS${C.reset}
-  ${C.green}stat${C.reset}             - Display precise 13D product vector & metrics.
-  ${C.green}audit${C.reset}            - Trigger Deep AI Audit & Asset refresh.
+${C.bold}诊断分析${C.reset}
+  ${C.green}stat${C.reset}             - 显示完整 14D 产品向量与关键指标
+  ${C.green}audit${C.reset}            - 触发深度 AI 战略审计并刷新资产
 
-Input ${C.green}help${C.reset} / ${C.green}clear${C.reset} / ${C.green}exit${C.reset} to control terminal.
+输入 ${C.green}help${C.reset} / ${C.green}clear${C.reset} / ${C.green}exit${C.reset} 控制终端
 `
 
 export default function TerminalUI() {
@@ -161,10 +161,10 @@ export default function TerminalUI() {
                 break
             case 'team':
                 const size = args[0]?.toUpperCase() as TeamSize
-                if (['SOLO', 'STARTUP', 'ENTERPRISE'].includes(size)) {
+                if (['SOLO', 'STARTUP', 'GROWTH', 'ENTERPRISE'].includes(size)) {
                     setTeamSize(size)
                 } else {
-                    print(`${C.red}[ERR] Invalid team size. Available: SOLO, STARTUP, ENTERPRISE${C.reset}`)
+                    print(`${C.red}[ERR] 无效的团队规模。可选: SOLO, STARTUP, GROWTH, ENTERPRISE${C.reset}`)
                 }
                 break
             case 'audit':
@@ -248,7 +248,16 @@ case 'stat':
         setTimeout(() => fitAddon.fit(), 100)
         xtermRef.current = term
         
-        term.writeln(`${C.yellow}提示：描述越模糊，σ (不确定性) 越高，模拟中的现金流崩塌风险越大。${C.reset}`)
+        term.writeln(`\r\n${C.cyan}${C.bold}  ██╗     ███████╗███╗   ███╗███████╗ ██████╗ ███╗   ██╗███████╗${C.reset}`)
+        term.writeln(`${C.cyan}${C.bold}  ██║     ██╔════╝████╗ ████║██╔════╝██╔═══██╗████╗  ██║██╔════╝${C.reset}`)
+        term.writeln(`${C.cyan}${C.bold}  ██║     █████╗  ██╔████╔██║█████╗  ██║   ██║██╔██╗ ██║█████╗${C.reset}`)
+        term.writeln(`${C.cyan}${C.bold}  ██║     ██╔══╝  ██║╚██╔╝██║██╔══╝  ██║   ██║██║╚██╗██║██╔══╝${C.reset}`)
+        term.writeln(`${C.cyan}${C.bold}  ███████╗███████╗██║ ╚═╝ ██║███████╗╚██████╔╝██║ ╚████║███████╗${C.reset}`)
+        term.writeln(`${C.cyan}${C.bold}  ╚══════╝╚══════╝╚═╝     ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝${C.reset}`)
+        term.writeln(`${C.gray}  v2.0 Gravity Sandbox — 14D 商业模拟引擎${C.reset}`)
+        term.writeln(`${C.gray}  ─────────────────────────────────────────────────${C.reset}`)
+        term.writeln(`${C.yellow}  提示：描述越模糊，σ (不确定性) 越高，模拟中的现金流崩塌风险越大。${C.reset}`)
+        term.writeln(`${C.gray}  输入 ${C.green}scan "你的项目描述"${C.gray} 开始扫描 | ${C.green}help${C.gray} 查看全部命令${C.reset}\r\n`)
 
         // Native terminal input has been migrated to the external HTML input bar below for better UX
 
