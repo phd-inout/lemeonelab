@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 
+import { headers } from 'next/headers'
+
 export async function login(formData: FormData) {
   const supabase = await createClient()
 
@@ -16,11 +18,11 @@ export async function login(formData: FormData) {
 
   if (error) {
     console.error("Login failed:", error.message)
-    redirect('/login?error=Invalid%20credentials')
+    redirect('/login?error=' + encodeURIComponent(error.message))
   }
 
-  revalidatePath('/sequencer', 'layout')
-  redirect('/sequencer')
+  revalidatePath('/sandbox', 'layout')
+  redirect('/sandbox')
 }
 
 export async function signup(formData: FormData) {
@@ -35,11 +37,34 @@ export async function signup(formData: FormData) {
 
   if (error) {
     console.error("Signup failed:", error.message)
-    redirect('/login?error=Failed%20to%20register')
+    redirect('/login?error=' + encodeURIComponent(error.message))
   }
 
-  revalidatePath('/sequencer', 'layout')
-  redirect('/sequencer')
+  revalidatePath('/sandbox', 'layout')
+  redirect('/sandbox')
+}
+
+export async function signInWithProvider(provider: 'google' | 'github') {
+  const supabase = await createClient()
+  
+  const headersList = await headers()
+  const protocol = headersList.get('x-forwarded-proto') || 'http'
+  const host = headersList.get('x-forwarded-host') || headersList.get('host')
+  const origin = `${protocol}://${host}`
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: `${origin}/auth/callback`,
+    },
+  })
+
+  if (error || !data?.url) {
+    console.error("OAuth init failed:", error?.message)
+    redirect('/login?error=' + encodeURIComponent(error?.message || 'OAuth init failed'))
+  }
+
+  redirect(data.url)
 }
 
 export async function logout() {

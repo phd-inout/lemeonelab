@@ -65,7 +65,7 @@ export function calculateMetrics(
     techDebt: number, 
     teamSize: string,
     previousActiveUsers: number = 0,
-    cash: number = 0
+    arpu: number = 45
 ) {
   const R0 = 0.35; 
   const k = 12;   
@@ -105,20 +105,14 @@ export function calculateMetrics(
       const pressure = productVector[5]; // D6 Monetize Pressure
       
       // 1. Rational Probability (The Fermi Transition)
-      // Users pay when Resonance > Barrier.
-      // Barrier is derived from (1.0 - Pressure).
       const barrier = 1.0 - pressure;
-      const energyGap = (barrier - resonance * 0.8) * 10.0; // Sharpness
+      const energyGap = (barrier - resonance * 0.8) * 10.0;
       const pRational = 1.0 / (1.0 + Math.exp(energyGap));
       
       // 2. Emotional/Entropy Probability (The Fan Constant)
-      // Base non-rational conversion rate (~1.5%) scaled by resonance.
       const pEntropy = 0.015 * resonance;
       
-      // 3. Final Probability Density:
-      // Slack (High Pressure) is guided by pRational.
-      // Discord (Low Pressure) is saved by pEntropy.
-      // The 0.38 ceiling perfectly balances real-world B2B/B2C drop-offs.
+      // 3. Final Probability Density
       const pPay = (pRational * pressure * 0.38) + pEntropy;
       
       if (Math.random() < Math.min(0.98, pPay)) {
@@ -129,28 +123,35 @@ export function calculateMetrics(
   const emergentMonetizationRate = sampleSize > 0 ? (samplePaidCount / sampleSize) : 0;
   paidUsers = Math.floor(totalActiveUsers * emergentMonetizationRate);
   
-  const mrr = paidUsers * 45;
-  const monthlyBurn = 20000;
-  const runwayMonths = cash > 0 ? (cash / monthlyBurn) : 0;
+  // MRR: driven by industry-specific ARPU (injected from IndustryProfile)
+  const mrr = paidUsers * arpu;
   
-  let survivalRate = 1.0;
-  if (mrr < monthlyBurn) {
-      const financialHealth = Math.min(1, runwayMonths / 12); 
-      survivalRate = Math.max(0.1, financialHealth * 0.8 + (avgResonance * 0.2));
-  } else {
-      survivalRate = Math.min(1.0, 0.8 + (mrr / monthlyBurn) * 0.1);
-  }
+  // Survival Rate: Pure physics formula (no cash dependency)
+  // Based on: resonance strength, tech debt decay, and conversion health
+  const resonanceHealth = Math.min(1, avgResonance / 0.5); // 0.5 resonance = full health
+  const techDebtDecay = Math.exp(-0.02 * techDebt); // exponential decay with debt
+  const conversionHealth = Math.min(1, emergentMonetizationRate / 0.05); // 5% conversion = healthy
+  const barrierStrength = productVector[10] * 0.3; // D11 Barriers contribute to survival
+  
+  const survivalRate = Math.min(1.0, Math.max(0.05,
+    resonanceHealth * 0.4 +       // 40% weight: product-market fit
+    techDebtDecay * 0.25 +         // 25% weight: system integrity
+    conversionHealth * 0.2 +       // 20% weight: revenue capability
+    barrierStrength +              // 15% weight (0.3*0.5 max): moat
+    (avgResonance > 0.3 ? 0.05 : 0) // bonus for crossing resonance threshold
+  ));
 
   return {
     avgResonance,
     conversionRate: population.length > 0 ? paidUsers / population.length : 0,
     earningPotential: paidUsers,
     activePaidUserCount: totalActiveUsers,
+    mrr,
     survivalRate: Math.min(1, survivalRate)
   }
 }
 
-export async function stepSimulation(state: SandboxState): Promise<SandboxState> {
+export async function stepSimulation(state: SandboxState, arpu: number = 45): Promise<SandboxState> {
   const nextEpoch = state.epoch + 1;
   const weights: Vector14D = [1,1,1,1,1,1,1,1,1,1,1,1,1,1];
   const previousActiveUsers = state.metrics.activePaidUserCount || 0;
@@ -182,16 +183,11 @@ export async function stepSimulation(state: SandboxState): Promise<SandboxState>
   const nextTechDebt = state.techDebt + techDebtBump;
 
   const updatedAgents = await runCollisionAsync(nextProductVector, nextTechDebt, agentsClone, previousActiveUsers, weights);
-  const metrics = calculateMetrics(updatedAgents, nextProductVector, nextTechDebt, teamSize, previousActiveUsers, state.cash);
-
-  const mrr = metrics.earningPotential * 45;
-  const weeklyBurn = (state.burnRate || 20000) / 4;
-  const nextCash = Math.max(-10000000, state.cash + (mrr / 4) - weeklyBurn);
+  const metrics = calculateMetrics(updatedAgents, nextProductVector, nextTechDebt, teamSize, previousActiveUsers, arpu);
 
   return {
     ...state,
     epoch: nextEpoch,
-    cash: nextCash,
     techDebt: nextTechDebt,
     productVector: nextProductVector,
     agents: updatedAgents,
@@ -202,7 +198,7 @@ export async function stepSimulation(state: SandboxState): Promise<SandboxState>
         resonance: metrics.avgResonance,
         survival: metrics.survivalRate,
         conversion: metrics.conversionRate,
-        cash: nextCash
+        mrr: metrics.mrr
     }]
   }
 }

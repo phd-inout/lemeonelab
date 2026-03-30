@@ -3,8 +3,10 @@
 import { useLemeoneStore } from '@/lib/store';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import AssetPanel from '@/components/AssetPanel';
 import VisualizationPanel from '@/components/VisualizationPanel';
+import LogoutButton from '@/components/LogoutButton';
 
 const TerminalUI = dynamic(() => import('@/components/TerminalUI'), { ssr: false });
 
@@ -78,41 +80,61 @@ export default function Home() {
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_#00f2ff]"></span>
             <span className="font-bold tracking-tighter text-lg">LEMEONE_LAB <span className="text-gray-600">v2.0</span></span>
           </div>
-          <div className="flex gap-8 text-[10px] uppercase tracking-widest text-gray-400">
+          <div className="flex gap-6 text-[10px] uppercase tracking-widest text-gray-400">
+            {/* 1. 活跃用户 */}
             <div className="flex flex-col">
-              <span className="text-gray-600">Active_Paid_Users</span>
-              <span className={sandboxState ? ((sandboxState.metrics?.earningPotential || 0) < 100 ? 'text-red-500 underline decoration-double' : 'text-primary') : 'text-gray-600'}>
+              <span className="text-gray-600">活跃用户</span>
+              <span className={sandboxState ? 'text-primary' : 'text-gray-600'}>
+                {sandboxState ? (sandboxState.metrics?.activePaidUserCount || 0).toLocaleString() : '---'}
+              </span>
+            </div>
+            {/* 2. 付费用户 */}
+            <div className="flex flex-col">
+              <span className="text-gray-600">付费用户</span>
+              <span className={sandboxState ? ((sandboxState.metrics?.earningPotential || 0) < 10 ? 'text-red-500' : 'text-green-400 font-bold') : 'text-gray-600'}>
                 {sandboxState ? (sandboxState.metrics?.earningPotential || 0).toLocaleString() : '---'}
               </span>
             </div>
+            {/* 3. 月营收 MRR */}
             <div className="flex flex-col">
-              <span className="text-gray-600">Projected_MRR</span>
-              <span className={sandboxState ? 'text-green-400 font-bold' : 'text-gray-600'}>
-                {sandboxState ? '$' + ((sandboxState.metrics?.earningPotential || 0) * 15).toLocaleString() : '---'}
+              <span className="text-gray-600">月营收_MRR</span>
+              <span className={sandboxState ? ((sandboxState.metrics?.mrr || 0) > 0 ? 'text-green-400 font-bold' : 'text-yellow-500') : 'text-gray-600'}>
+                {sandboxState ? '$' + (sandboxState.metrics?.mrr || 0).toLocaleString() : '---'}
               </span>
             </div>
+            {/* 4. 转化率 */}
             <div className="flex flex-col">
-              <span className="text-gray-600">Logical_Epoch</span>
+              <span className="text-gray-600">转化率</span>
+              <span className={sandboxState ? ((sandboxState.metrics?.conversionRate || 0) > 0.03 ? 'text-green-400' : 'text-yellow-500') : 'text-gray-600'}>
+                {sandboxState ? ((sandboxState.metrics?.conversionRate || 0) * 100).toFixed(2) + '%' : '---'}
+              </span>
+            </div>
+            {/* 5. 生存几率 */}
+            <div className="flex flex-col">
+              <span className="text-gray-600">生存几率</span>
+              <span className={sandboxState ? ((sandboxState.metrics?.survivalRate || 0) > 0.5 ? 'text-green-400 font-bold' : 'text-red-500 font-bold animate-pulse') : 'text-gray-600'}>
+                {sandboxState ? ((sandboxState.metrics?.survivalRate || 0) * 100).toFixed(1) + '%' : '---'}
+              </span>
+            </div>
+            {/* Epoch */}
+            <div className="flex flex-col">
+              <span className="text-gray-600">周期</span>
               <span className={sandboxState ? 'text-white' : 'text-gray-600'}>
                 {sandboxState ? `T+${sandboxState.epoch || 0}` : 'PRE-SIM'}
               </span>
             </div>
-            <div className="flex flex-col">
-              <span className="text-gray-600">Avg_Resonance</span>
-              <span className={sandboxState ? 'text-primary' : 'text-gray-600'}>
-                {sandboxState ? ((sandboxState.metrics?.avgResonance || 0) * 100).toFixed(1) + '%' : '---'}
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-gray-600">Population_Target</span>
-              <span className="text-white">10,000</span>
-            </div>
           </div>
         </div>
         
-        <div className="flex items-center gap-4 text-xs">
-          <span className="text-gray-600">STATUS:</span>
-          <span className="text-green-500 font-bold tracking-widest">[GRAVITY_ENGAGED]</span>
+        <div className="flex items-center gap-6 text-xs font-bold tracking-widest">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-600">STATUS:</span>
+            <span className="text-green-500">[GRAVITY_ENGAGED]</span>
+          </div>
+          <Link href="/docs" className="text-gray-400 hover:text-white transition-colors border border-gray-800 px-3 py-1 rounded bg-[#111] hover:bg-[#222]">
+            READ DOCS
+          </Link>
+          <LogoutButton />
         </div>
       </div>
 

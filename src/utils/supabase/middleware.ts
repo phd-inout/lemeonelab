@@ -1,6 +1,15 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Routes that DON'T require authentication
+const PUBLIC_ROUTES = ['/', '/login', '/docs', '/auth/callback']
+
+function isPublicRoute(pathname: string): boolean {
+  return PUBLIC_ROUTES.some(route => 
+    pathname === route || pathname.startsWith(route + '/')
+  )
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -15,7 +24,7 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
           })
@@ -27,31 +36,23 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Do not run code between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with cross-origin requests.
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/login')
-  
-  if (
-    !user &&
-    !isAuthRoute &&
-    !request.nextUrl.pathname.startsWith('/api') && // Don't block API routes here
-    !request.nextUrl.pathname.match(/\.(.*)$/) // Don't block static files
-  ) {
-    // If not logged in and trying to access a protected route (e.g. /), redirect to /login
+  const pathname = request.nextUrl.pathname
+
+  // If not logged in and trying to access a PROTECTED route, redirect to /login
+  if (!user && !isPublicRoute(pathname) && !pathname.startsWith('/api') && !pathname.match(/\.(.*)$/)) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  if (user && isAuthRoute) {
-    // If logged in and trying to access /login, redirect to /
+  // If logged in and on /login, send them to sandbox
+  if (user && pathname === '/login') {
     const url = request.nextUrl.clone()
-    url.pathname = '/'
+    url.pathname = '/sandbox'
     return NextResponse.redirect(url)
   }
 

@@ -21,8 +21,11 @@ export default function DocsLayout({
             <span className="text-gray-600">|</span>
             <span className="text-green-400">Survival Guide</span>
           </div>
-          <div>
-            <span>SECURE CONNECTION</span>
+          <div className="flex items-center gap-6 font-bold text-xs tracking-widest">
+            <span className="text-gray-500">SECURE CONNECTION</span>
+            <Link href="/sandbox" className="text-primary hover:text-white transition-colors border border-primary px-4 py-1.5 rounded bg-primary/10 hover:bg-primary/20">
+              OPEN SANDBOX
+            </Link>
           </div>
         </div>
       </header>

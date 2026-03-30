@@ -11,7 +11,6 @@ import {
     TIER_LIMITS,
     TeamSize,
 } from './engine/types'
-import { loadIndustryProfile } from './engine/industry-loader'
 import { 
     generatePopulation, 
     stepSimulation, 
@@ -21,7 +20,8 @@ import {
 import { 
     scanSeed, 
     generateProposal, 
-    runAudit 
+    runAudit,
+    getIndustryContext
 } from './engine/cortex-ai'
 
 interface LemeoneStore {
@@ -29,17 +29,19 @@ interface LemeoneStore {
     userTier: UserTier
     isRunning: boolean
     isInterviewing: boolean
+    activeQuestions: InterviewQuestion[]
     interviewHistory: string[]
     draftSpec: string
     terminalLines: string[]
     
     // Core Actions
     initSimulation: (seedText: string, requestedTier?: UserTier) => Promise<void>
-    answerInterview: (text: string) => Promise<void>
+    answerInterview: (text: string, questionId?: string) => Promise<void>
     step: () => Promise<void>
     updateVector: (dim: keyof typeof DIM, value: number) => void
     addFeature: (description: string) => Promise<void>
     setTeamSize: (size: TeamSize) => void
+    setARPU: (price: number) => void
     audit: () => Promise<void>
     upgradeTier: (newTier: UserTier) => void
     
@@ -55,9 +57,11 @@ export const useLemeoneStore = create<LemeoneStore>()(
             userTier: 'FREE',
             isRunning: false,
             isInterviewing: false,
+            activeQuestions: [],
             interviewHistory: [],
             draftSpec: '',
             terminalLines: [],
+            setARPU: () => {},
 
             pushLine: (line: string) =>
                 set(s => ({ terminalLines: [...s.terminalLines.slice(-500), line] })),
@@ -69,15 +73,14 @@ export const useLemeoneStore = create<LemeoneStore>()(
                 get().pushLine(`\x1b[36m\x1b[1m╔═ [LEMEONE-LAB 2.0] 初始化协议启动 ═══════════════════════╗\x1b[0m`)
                 get().pushLine(`\x1b[36m║\x1b[0m  \x1b[90m输入摘要:\x1b[0m "${seedText.substring(0, 60)}${seedText.length > 60 ? '...' : ''}"`) 
                 get().pushLine(`\x1b[36m║\x1b[0m  \x1b[90m分辨率:\x1b[0m   ${tier} (${limits.maxAgents.toLocaleString()} Agents)`)
-                
                 // Phase 1: Industry Lock-on
-                const industryCtx = loadIndustryProfile(seedText);
+                const industryCtx = await getIndustryContext(seedText);
                 if (industryCtx) {
                     get().pushLine(`\x1b[36m║\x1b[0m`)
                     get().pushLine(`\x1b[36m║\x1b[0m  \x1b[35m\x1b[1m[🔬 行业锁定]\x1b[0m ${industryCtx.name}`)
                     get().pushLine(`\x1b[36m║\x1b[0m  \x1b[90m搜索关键词:\x1b[0m ${industryCtx.keywords.join(' · ')}`)
                     if (industryCtx.hardConstraints.length > 0) {
-                        get().pushLine(`\x1b[36m║\x1b[0m  \x1b[31m物理死穴:\x1b[0m   ${industryCtx.hardConstraints.map(c => `${c.dim}≥${c.floor}`).join(', ')}`)
+                        get().pushLine(`\x1b[36m║\x1b[0m  \x1b[31m物理死穴:\x1b[0m   ${industryCtx.hardConstraints.map((c: any) => `${c.dim}≥${c.floor}`).join(', ')}`)
                     }
                 } else {
                     get().pushLine(`\x1b[36m║\x1b[0m  \x1b[33m[行业] 未匹配到特定行业，使用通用基准\x1b[0m`)
@@ -111,7 +114,7 @@ export const useLemeoneStore = create<LemeoneStore>()(
                 // Phase 3: Cortex Scanning
                 get().pushLine(`\x1b[90m[📊 SCORING] 启动 14D 商业基因扫描...\x1b[0m`)
                 const history = [`User: ${seedText}`]
-                const { seed, terminalOutput, isComplete, draftContent } = await scanSeed(history, '')
+                const { seed, terminalOutput, isComplete, draftContent, questions } = await scanSeed(history, '')
                 
                 terminalOutput.split('\n').forEach(line => {
                     get().pushLine(line)
@@ -120,6 +123,7 @@ export const useLemeoneStore = create<LemeoneStore>()(
                 if (!isComplete) {
                     set({ 
                         isInterviewing: true, 
+                        activeQuestions: questions || [],
                         interviewHistory: history,
                         draftSpec: draftContent || ''
                     })
@@ -139,17 +143,20 @@ export const useLemeoneStore = create<LemeoneStore>()(
                 const proposal = await generateProposal(seed, seedText)
                 const initialPopulation = generatePopulation(seed, limits.maxAgents)
                 const agents = await import('./engine/simulator').then(m => m.runCollisionAsync(seed.mean, 0, initialPopulation, 0))
-                const initialMetrics = calculateMetrics(agents, seed.mean, 0, 'STARTUP')
+                const initialMetrics = calculateMetrics(agents, seed.mean, 0, 'STARTUP', 0, industryCtx?.baselineARPU || 45)
                 
                 const initialState: SandboxState = {
                     id: uuidv4(),
                     tier,
                     epoch: 0,
                     teamSize: 'STARTUP',
-                    cash: 100000,
-                    burnRate: 20000,
                     techDebt: 0,
                     currentStage: 'SEED',
+                    seedText,
+                    userARPU: industryCtx?.baselineARPU || 45,
+                    industryId: industryCtx?.id || null,
+                    industryName: industryCtx?.name || null,
+                    industryBaselineARPU: industryCtx?.baselineARPU || 45,
                     productVector: seed.mean,
                     agents,
                     metrics: initialMetrics,
@@ -167,19 +174,22 @@ export const useLemeoneStore = create<LemeoneStore>()(
                         resonance: initialMetrics.avgResonance,
                         survival: initialMetrics.survivalRate,
                         conversion: initialMetrics.conversionRate,
-                        cash: 100000
+                        mrr: initialMetrics.mrr
                     }]
                 }
 
                 set({ sandboxState: initialState, isRunning: true, isInterviewing: false })
-                get().pushLine(`\x1b[32m\x1b[1m[✓ READY] 重力沙盒已就绪 (T+0)\x1b[0m — 输入 \x1b[36mdev\x1b[0m 推进周期，\x1b[36mstat\x1b[0m 查看向量，\x1b[36maudit\x1b[0m 启动审计`)
+                get().pushLine(`\x1b[32m\x1b[1m[✓ READY] 重力沙盒已就绪 (T+0)\x1b[0m — 输入 \x1b[36mdev\x1b[0m 推进周期或先设定价格`)
+                get().pushLine(`\x1b[33m[💰 PRICING] 行业建议 ARPU: $${initialState.industryBaselineARPU}/月。输入 \x1b[36mprice <金额>\x1b[33m 设定你的客单价，或直接 dev 保持默认。\x1b[0m`)
             },
 
-            answerInterview: async (text: string) => {
+            answerInterview: async (text: string, questionId?: string) => {
                 const { interviewHistory, draftSpec, userTier } = get()
                 const newHistory = [...interviewHistory, `User: ${text}`]
                 
-                const { seed, terminalOutput, isComplete, draftContent } = await scanSeed(newHistory, draftSpec)
+                set({ activeQuestions: [] }) // Clear immediately to show loading state
+
+                const { seed, terminalOutput, isComplete, draftContent, industryCtx, questions } = await scanSeed(newHistory, draftSpec)
                 
                 const aiResponse = terminalOutput.split('\n')
                 newHistory.push(`AI: ${aiResponse.join(' ')}`)
@@ -191,6 +201,7 @@ export const useLemeoneStore = create<LemeoneStore>()(
                 if (!isComplete) {
                     set({ 
                         interviewHistory: newHistory,
+                        activeQuestions: questions || [],
                         draftSpec: draftContent || draftSpec
                     })
                     return
@@ -210,17 +221,20 @@ export const useLemeoneStore = create<LemeoneStore>()(
                 const proposal = await generateProposal(seed, newHistory.join('\n'))
                 const initialPopulation = generatePopulation(seed, limits.maxAgents)
                 const agents = await import('./engine/simulator').then(m => m.runCollisionAsync(seed.mean, 0, initialPopulation, 0))
-                const initialMetrics = calculateMetrics(agents, seed.mean, 0, 'STARTUP')
+                const initialMetrics = calculateMetrics(agents, seed.mean, 0, 'STARTUP', 0, industryCtx?.baselineARPU || 45)
 
                 const initialState: SandboxState = {
                     id: uuidv4(),
                     tier: userTier,
                     epoch: 0,
                     teamSize: 'STARTUP',
-                    cash: 100000,
-                    burnRate: 20000,
                     techDebt: 0,
                     currentStage: 'SEED',
+                    seedText: newHistory.join('\n'),
+                    userARPU: industryCtx?.baselineARPU || 45,
+                    industryId: industryCtx?.id || null,
+                    industryName: industryCtx?.name || null,
+                    industryBaselineARPU: industryCtx?.baselineARPU || 45,
                     productVector: seed.mean,
                     agents,
                     metrics: initialMetrics,
@@ -238,7 +252,7 @@ export const useLemeoneStore = create<LemeoneStore>()(
                         resonance: initialMetrics.avgResonance,
                         survival: initialMetrics.survivalRate,
                         conversion: initialMetrics.conversionRate,
-                        cash: 100000
+                        mrr: initialMetrics.mrr
                     }]
                 }
 
@@ -248,17 +262,19 @@ export const useLemeoneStore = create<LemeoneStore>()(
                     isInterviewing: false,
                     draftSpec: draftContent || draftSpec
                 })
-                get().pushLine(`\x1b[32m\x1b[1m[✓ READY] 重力沙盒已就绪 (T+0)\x1b[0m — 输入 \x1b[36mdev\x1b[0m 推进周期，\x1b[36mstat\x1b[0m 查看向量，\x1b[36maudit\x1b[0m 启动审计`)
+                get().pushLine(`\x1b[32m\x1b[1m[✓ READY] 重力沙盒已就绪 (T+0)\x1b[0m — 输入 \x1b[36mdev\x1b[0m 推进周期或先设定价格`)
+                get().pushLine(`\x1b[33m[💰 PRICING] 行业建议 ARPU: $${initialState.industryBaselineARPU}/月。输入 \x1b[36mprice <金额>\x1b[33m 设定你的客单价，或直接 dev 保持默认。\x1b[0m`)
             },
 
             step: async () => {
                 const s = get().sandboxState
                 if (!s) return
 
-                const nextState = await stepSimulation(s)
+                const arpu = s.userARPU
+                const nextState = await stepSimulation(s, arpu)
                 
                 const sRate = nextState.metrics.survivalRate
-                const nextJournal = s.assets.journal + `\n## [EPOCH T+${nextState.epoch}]\n- **Active Paid Users**: ${nextState.metrics.earningPotential.toLocaleString()}\n- **Survival Rate**: ${(sRate * 100).toFixed(1)}%\n- **Tech Debt**: ${nextState.techDebt.toFixed(1)}%\n- **Projected MRR**: $${(nextState.metrics.earningPotential * 15).toLocaleString()}\n`
+                const nextJournal = s.assets.journal + `\n## [EPOCH T+${nextState.epoch}]\n- **活跃用户**: ${nextState.metrics.activePaidUserCount.toLocaleString()}\n- **付费用户**: ${nextState.metrics.earningPotential.toLocaleString()}\n- **MRR**: $${nextState.metrics.mrr.toLocaleString()}\n- **生存几率**: ${(sRate * 100).toFixed(1)}%\n- **技术债**: ${nextState.techDebt.toFixed(1)}%\n`
                 
                 nextState.assets.journal = nextJournal
                 set({ sandboxState: nextState })
@@ -272,26 +288,22 @@ export const useLemeoneStore = create<LemeoneStore>()(
                 const b = '\x1b[1m'
 
                 const diffDebt = nextState.techDebt - s.techDebt
-
-                const runway = nextState.burnRate > 0 ? Math.max(0, Math.floor(nextState.cash / nextState.burnRate)) : 999
-                const runwayColor = runway > 12 ? g : runway > 6 ? y : r
+                const mrrColor = nextState.metrics.mrr > 0 ? g : y
 
                 const report = [
                     `\n${g}╔═ [EPOCH T+${nextState.epoch}] ════════════════════════════════════════════╗${res}`,
                     `${g}║${res}  \x1b[90m用户增长\x1b[0m`,
-                    `${g}║${res}    活跃付费用户:    ${c}${nextState.metrics.earningPotential.toLocaleString()}${res} / ${nextState.agents.length.toLocaleString()}`,
+                    `${g}║${res}    活跃用户:        ${c}${nextState.metrics.activePaidUserCount.toLocaleString()}${res}`,
+                    `${g}║${res}    付费用户:        ${c}${nextState.metrics.earningPotential.toLocaleString()}${res}`,
                     `${g}║${res}    转化率:          ${b}${(nextState.metrics.conversionRate * 100).toFixed(2)}%${res}`,
                     `${g}║${res}    平均共鸣度:      ${nextState.metrics.avgResonance.toFixed(4)}`,
                     `${g}║${res}`,
-                    `${g}║${res}  \x1b[90m财务健康\x1b[0m`,
-                    `${g}║${res}    现金余额:        ${c}$${nextState.cash.toLocaleString()}${res}`,
-                    `${g}║${res}    月度燃烧:        ${y}-$${nextState.burnRate.toLocaleString()}/mo${res}`,
-                    `${g}║${res}    存活跑道:        ${runwayColor}${runway} 个月${res}`,
-                    `${g}║${res}    预估 MRR:         ${c}$${(nextState.metrics.earningPotential * 15).toLocaleString()}${res}`,
+                    `${g}║${res}  \x1b[90m营收健康\x1b[0m`,
+                    `${g}║${res}    月营收 (MRR):     ${mrrColor}$${nextState.metrics.mrr.toLocaleString()}${res}  (ARPU: $${arpu})`,
                     `${g}║${res}`,
                     `${g}║${res}  \x1b[90m系统健康\x1b[0m`,
                     `${g}║${res}    技术债务:        ${y}+${diffDebt.toFixed(1)}%${res} (累计: ${nextState.techDebt.toFixed(1)}%)`,
-                    `${g}║${res}    生存概率:        ${sRate > 0.5 ? g : r}${(sRate * 100).toFixed(1)}%${res}`,
+                    `${g}║${res}    生存几率:        ${sRate > 0.5 ? g : r}${(sRate * 100).toFixed(1)}%${res}`,
                     `${g}╚════════════════════════════════════════════════════════╝${res}`
                 ]
                 
@@ -401,6 +413,7 @@ export const useLemeoneStore = create<LemeoneStore>()(
                 terminalLines: [], 
                 isRunning: false,
                 isInterviewing: false,
+                activeQuestions: [],
                 interviewHistory: [],
                 draftSpec: ''
             })

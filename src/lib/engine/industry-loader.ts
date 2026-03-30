@@ -14,25 +14,26 @@ export interface IndustryContext {
   keywords: string[];  // search keywords extracted from the industry profile
   rawMarkdown: string; // full MD content for prompt injection
   hardConstraints: { dim: string; floor: number }[]; // Physics Laws survival floors
+  baselineARPU: number; // Monthly ARPU in USD for MRR calculation
 }
 
 // Industry keyword routing table
-const INDUSTRY_ROUTES: { pattern: RegExp; file: string; keywords: string[] }[] = [
-  { pattern: /机器人|robotics|划线|无人机|硬件/, file: 'ind_001_robotics.md', keywords: ['机器人', '工业自动化', 'SLAM', '激光雷达', 'RTK-GPS'] },
-  { pattern: /电池|能源|储能|电源|移动电源/, file: 'ind_002_energy.md', keywords: ['电池', '储能', 'BMS', '电芯', '充电桩'] },
-  { pattern: /iot|穿戴|智能家居|耳机|路由器/, file: 'ind_003_iot.md', keywords: ['IoT', '智能家居', '穿戴设备', '蓝牙', 'Matter协议'] },
-  { pattern: /农业|农田|户外|测绘|拖拉机/, file: 'ind_004_agritech.md', keywords: ['农业科技', '精准农业', '无人机喷洒', '卫星遥感'] },
-  { pattern: /独立开发|小微|个体|个人企业|记账|待办/, file: 'ind_005_solopreneur.md', keywords: ['独立开发者', '小微企业', 'SaaS工具', '生产力'] },
-  { pattern: /医疗saas|法律saas|建筑|垂直b2b/, file: 'ind_006_vertical_b2b.md', keywords: ['垂直SaaS', '医疗信息化', '法律科技', 'ERP'] },
-  { pattern: /api|开发者|中间件|云原生|服务器/, file: 'ind_007_devtools.md', keywords: ['开发者工具', 'API', '云原生', '基础设施', 'DevOps'] },
-  { pattern: /协同|文档|项目管理|聊天/, file: 'ind_008_collaboration.md', keywords: ['协同办公', '在线文档', '项目管理', '即时通讯'] },
-  { pattern: /投顾|决策模型|风控|量化/, file: 'ind_009_ai_decision.md', keywords: ['AI决策', '量化交易', '风控模型', '智能投顾'] },
-  { pattern: /生成|视频生成|发帖|ai作图/, file: 'ind_010_gen_ai.md', keywords: ['生成式AI', 'AI绘画', '视频生成', 'AIGC'] },
-  { pattern: /web3|dao|加密|区块链|token/, file: 'ind_011_web3.md', keywords: ['Web3', '区块链', 'DeFi', 'DAO', '智能合约'] },
-  { pattern: /创作者|粉丝|知识付费|社区/, file: 'ind_012_creator.md', keywords: ['创作者经济', '知识付费', '粉丝社区', '内容变现'] },
-  { pattern: /交易平台|专家|挂号|双边/, file: 'ind_013_marketplaces.md', keywords: ['双边市场', '撮合平台', '专业服务', 'O2O'] },
-  { pattern: /鞋服|消费品|直销|d2c/, file: 'ind_014_d2c.md', keywords: ['D2C品牌', '新零售', '消费品', '私域流量'] },
-  { pattern: /支付|结算|钱包|跨境汇款/, file: 'ind_015_fintech.md', keywords: ['支付', 'FinTech', '跨境汇款', '数字钱包', '合规'] },
+const INDUSTRY_ROUTES: { pattern: RegExp; file: string; keywords: string[]; defaultARPU: number }[] = [
+  { pattern: /机器人|robotics|划线|无人机|硬件/, file: 'ind_001_robotics.md', keywords: ['机器人', '工业自动化', 'SLAM', '激光雷达', 'RTK-GPS'], defaultARPU: 5000 },
+  { pattern: /电池|能源|储能|电源|移动电源/, file: 'ind_002_energy.md', keywords: ['电池', '储能', 'BMS', '电芯', '充电桩'], defaultARPU: 2000 },
+  { pattern: /iot|穿戴|智能家居|耳机|路由器/, file: 'ind_003_iot.md', keywords: ['IoT', '智能家居', '穿戴设备', '蓝牙', 'Matter协议'], defaultARPU: 15 },
+  { pattern: /农业|农田|户外|测绘|拖拉机/, file: 'ind_004_agritech.md', keywords: ['农业科技', '精准农业', '无人机喷洒', '卫星遥感'], defaultARPU: 3000 },
+  { pattern: /独立开发|小微|个体|个人企业|记账|待办/, file: 'ind_005_solopreneur.md', keywords: ['独立开发者', '小微企业', 'SaaS工具', '生产力'], defaultARPU: 15 },
+  { pattern: /医疗saas|法律saas|建筑|垂直b2b/, file: 'ind_006_vertical_b2b.md', keywords: ['垂直SaaS', '医疗信息化', '法律科技', 'ERP'], defaultARPU: 200 },
+  { pattern: /api|开发者|中间件|云原生|服务器/, file: 'ind_007_devtools.md', keywords: ['开发者工具', 'API', '云原生', '基础设施', 'DevOps'], defaultARPU: 50 },
+  { pattern: /协同|文档|项目管理|聊天/, file: 'ind_008_collaboration.md', keywords: ['协同办公', '在线文档', '项目管理', '即时通讯'], defaultARPU: 12 },
+  { pattern: /投顾|决策模型|风控|量化/, file: 'ind_009_ai_decision.md', keywords: ['AI决策', '量化交易', '风控模型', '智能投顾'], defaultARPU: 500 },
+  { pattern: /生成|视频生成|发帖|ai作图/, file: 'ind_010_gen_ai.md', keywords: ['生成式AI', 'AI绘画', '视频生成', 'AIGC'], defaultARPU: 25 },
+  { pattern: /web3|dao|加密|区块链|token/, file: 'ind_011_web3.md', keywords: ['Web3', '区块链', 'DeFi', 'DAO', '智能合约'], defaultARPU: 100 },
+  { pattern: /创作者|粉丝|知识付费|社区/, file: 'ind_012_creator.md', keywords: ['创作者经济', '知识付费', '粉丝社区', '内容变现'], defaultARPU: 10 },
+  { pattern: /交易平台|专家|挂号|双边/, file: 'ind_013_marketplaces.md', keywords: ['双边市场', '撮合平台', '专业服务', 'O2O'], defaultARPU: 80 },
+  { pattern: /鞋服|消费品|直销|d2c/, file: 'ind_014_d2c.md', keywords: ['D2C品牌', '新零售', '消费品', '私域流量'], defaultARPU: 45 },
+  { pattern: /支付|结算|钱包|跨境汇款/, file: 'ind_015_fintech.md', keywords: ['支付', 'FinTech', '跨境汇款', '数字钱包', '合规'], defaultARPU: 30 },
 ];
 
 /** Match input text to an industry file name */
@@ -54,6 +55,12 @@ function parseHardConstraints(markdown: string): { dim: string; floor: number }[
     constraints.push({ dim: match[1].toUpperCase(), floor: parseFloat(match[2]) });
   }
   return constraints;
+}
+
+/** Extract ARPU_Baseline from industry MD (e.g. "ARPU_Baseline: $5000") */
+function parseARPU(markdown: string): number | null {
+  const match = markdown.match(/ARPU_Baseline:\s*\$?([\d,]+)/i);
+  return match ? parseInt(match[1].replace(/,/g, ''), 10) : null;
 }
 
 /** Extract industry display name from "# Industry DNA: <name>" header */
@@ -83,6 +90,9 @@ export function loadIndustryProfile(text: string): IndustryContext | null {
     const matchedRoute = INDUSTRY_ROUTES.find(r => textLower.match(r.pattern));
     const keywords = matchedRoute?.keywords || [];
 
+    const parsedARPU = parseARPU(rawMarkdown);
+    const fallbackARPU = matchedRoute?.defaultARPU || 45;
+
     return {
       id,
       filename,
@@ -90,6 +100,7 @@ export function loadIndustryProfile(text: string): IndustryContext | null {
       keywords,
       rawMarkdown,
       hardConstraints: parseHardConstraints(rawMarkdown),
+      baselineARPU: parsedARPU ?? fallbackARPU,
     };
   } catch (e) {
     console.error('[IndustryLoader] Failed to load profile:', e);

@@ -33,6 +33,7 @@ ${C.bold}向量调参${C.reset}
   ${C.green}set <dim> <val>${C.reset}  - 调整 14D 维度 (PERF, DEPTH, INTERACT, STABLE, ENTRY, MONETIZE...)
   ${C.green}feature "<描述>"${C.reset} - 将自然语言功能映射到向量空间
   ${C.green}team <规模>${C.reset}      - 设置资源约束 (SOLO, STARTUP, GROWTH, ENTERPRISE)
+  ${C.green}price <金额>${C.reset}     - 设定自定义月客单价 (如果偏离行业基准 >50% 需要加 -y 确认)
 
 ${C.bold}诊断分析${C.reset}
   ${C.green}stat${C.reset}             - 显示完整 14D 产品向量与关键指标
@@ -61,7 +62,11 @@ export default function TerminalUI() {
         audit, 
         reset, 
         upgradeTier,
-        terminalLines
+        setARPU,
+        terminalLines,
+        isInterviewing,
+        activeQuestions,
+        answerInterview
     } = useLemeoneStore()
 
     const lastRenderedLineCount = useRef(0)
@@ -167,6 +172,28 @@ export default function TerminalUI() {
                     print(`${C.red}[ERR] 无效的团队规模。可选: SOLO, STARTUP, GROWTH, ENTERPRISE${C.reset}`)
                 }
                 break
+            case 'price':
+                const sState = useLemeoneStore.getState().sandboxState
+                if (!sState) {
+                    print(`${C.red}[ERR] Simulation not initialized.${C.reset}`)
+                    break
+                }
+                const pValue = parseFloat(args[0])
+                if (isNaN(pValue) || pValue <= 0) {
+                    print(`${C.red}[ERR] 无效价格。用法: price <金额>${C.reset}`)
+                    break
+                }
+                const baseline = sState.industryBaselineARPU
+                const diffRatio = Math.abs(pValue - baseline) / baseline
+                const confirm = args.includes('-y')
+                
+                if (diffRatio > 0.5 && !confirm) {
+                    print(`${C.yellow}[WARN] 设定价格 ($${pValue}) 与行业基准 ($${baseline}) 偏差达 ${(diffRatio*100).toFixed(0)}%。\n请使用 ${C.bold}price ${pValue} -y${C.reset}${C.yellow} 强制确认。${C.reset}`)
+                } else {
+                    setARPU(pValue)
+                    print(`${C.green}[✓ OK] 成功设定客单价为: $${pValue}/月${C.reset}`)
+                }
+                break
             case 'audit':
                 print(`${C.magenta}[ALIGNMENT] 启动战略一致性复盘...${C.reset}`)
                 await audit()
@@ -200,7 +227,7 @@ case 'stat':
         }
 
         showPrompt()
-    }, [initSimulation, step, updateVector, addFeature, setTeamSize, audit, reset, upgradeTier, showPrompt, print])
+    }, [initSimulation, step, updateVector, addFeature, setTeamSize, audit, reset, upgradeTier, setARPU, showPrompt, print])
 
     const handleFileDrop = useCallback(async (e: React.DragEvent) => {
         e.preventDefault()
@@ -293,13 +320,78 @@ case 'stat':
                 <div ref={termRef} className="w-full h-full" />
             </div>
 
+            {/* Smart Probing Panel (Dynamic UI Injection) */}
+            {isInterviewing && activeQuestions.length > 0 && (
+                <div className="mx-6 mb-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <div className="flex flex-col gap-3 p-4 bg-gray-900/40 border border-cyan-500/30 rounded-lg backdrop-blur-md shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                        {activeQuestions.map((q) => (
+                            <div key={q.id} className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="px-1.5 py-0.5 text-[10px] bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded font-bold">
+                                        {q.dimension}
+                                    </span>
+                                    <span className="text-gray-100 text-sm font-medium">{q.text}</span>
+                                </div>
+                                {q.type === 'choice' && (
+                                    <div className="flex flex-wrap gap-2 mt-1">
+                                        {q.options?.map((opt) => (
+                                            <button
+                                                key={opt.value}
+                                                onClick={() => {
+                                                    xtermRef.current?.writeln(`\r\n> [CHOSE] ${opt.label}`);
+                                                    answerInterview(opt.label, q.id);
+                                                }}
+                                                className="group relative px-3 py-1.5 bg-gray-800/60 hover:bg-cyan-500/20 border border-gray-700 hover:border-cyan-500/50 rounded text-xs text-gray-400 hover:text-cyan-300 transition-all duration-200"
+                                                title={opt.description}
+                                            >
+                                                {opt.label}
+                                                {opt.description && (
+                                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black border border-gray-700 rounded text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity">
+                                                        {opt.description}
+                                                    </div>
+                                                )}
+                                            </button>
+                                        ))}
+                                        <button
+                                            onClick={() => inputRef.current?.focus()}
+                                            className="px-3 py-1.5 bg-gray-800/30 border border-gray-700/50 border-dashed rounded text-xs text-gray-500 hover:text-gray-400 transition-colors"
+                                        >
+                                            自定义输入...
+                                        </button>
+                                    </div>
+                                )}
+                                {q.type === 'yesno' && (
+                                    <div className="flex gap-2 mt-1">
+                                        {['是 (Yes)', '否 (No)'].map((label) => (
+                                            <button
+                                                key={label}
+                                                onClick={() => {
+                                                    xtermRef.current?.writeln(`\r\n> [CHOSE] ${label}`);
+                                                    answerInterview(label, q.id);
+                                                }}
+                                                className="px-4 py-1.5 bg-gray-800/60 hover:bg-cyan-500/20 border border-gray-700 hover:border-cyan-500/50 rounded text-xs text-gray-400 hover:text-cyan-300 transition-all"
+                                            >
+                                                {label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Lower: Visual Input Bar */}
             <div className="h-14 bg-black border-t border-gray-800/60 flex items-center px-6 shrink-0 font-mono text-sm relative shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-10">
                 <span className="text-cyan-500 mr-3 font-bold">{'>'}</span>
                 <input 
                     ref={inputRef}
                     className="flex-1 bg-transparent text-gray-200 focus:outline-none placeholder-gray-600/50"
-                    placeholder="Type your command or drop a PRD file here..."
+                    placeholder={
+                        activeQuestions.find(q => q.type === 'text')?.placeholder || 
+                        "Type your command or drop a PRD file here..."
+                    }
                     autoFocus
                     onKeyDown={(e) => {
                         if (e.key === 'Enter') {

@@ -61,19 +61,23 @@ export interface SandboxState {
   tier: UserTier 
   epoch: number
   teamSize: TeamSize
-  cash: number
-  burnRate: number 
   techDebt: number
   currentStage: CompanyStage
+  seedText: string
+  userARPU: number
+  industryId: string | null
+  industryName: string | null
+  industryBaselineARPU: number
   productVector: Vector14D
   agents: AgentDNA[] 
   
   metrics: {
     avgResonance: number
     conversionRate: number
-    earningPotential: number // 本周付费用户总数
+    earningPotential: number // 付费用户总数
+    activePaidUserCount: number // 活跃用户数（含免费）
+    mrr: number // Monthly Recurring Revenue (行业ARPU驱动)
     survivalRate: number
-    activePaidUserCount: number // 持久化留存用户数
   }
 
   assets: {
@@ -92,7 +96,7 @@ export interface SandboxState {
     resonance: number
     survival: number
     conversion: number
-    cash: number
+    mrr: number
   }[]
 }
 
@@ -105,6 +109,19 @@ export interface PopulationSeed {
   weights: Vector14D  
   outliers: Vector14D[] 
   evidences?: Record<string, string> 
+}
+
+export interface InterviewQuestion {
+  id: string;
+  dimension: string; // The 14D dimension this targets, e.g., D5-Entry
+  text: string;
+  type: 'choice' | 'text' | 'yesno';
+  options?: {
+    label: string;
+    value: string;
+    description?: string;
+  }[];
+  placeholder?: string;
 }
 
 export interface AuditReport {
