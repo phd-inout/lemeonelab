@@ -1,23 +1,24 @@
 ---
-title: "终端指令参考 (CLI Reference)"
-description: "掌握 Lemeone-Lab 终端的高阶干预技巧。"
+title: "Terminal Command Reference"
+description: "Mastering High-Level Intervention Techniques in the Lemeone-Lab Terminal."
 ---
 
-# 高阶终端操作指南
+# Advanced Terminal Operations
 
-Lemeone-Lab 提供的命令行界面 (CLI) 是你干预市场实验的主控台。
+The Lemeone-Lab Command Line Interface (CLI) is your primary console for intervening in market experiments.
 
-## 基础沙盘指令
-- `dev`：执行一个 Epoch（一周）的 100,000 人全量碰撞步进。建议在观察趋势时连续使用。
-- `stat`：调出当前 14D 基因向量仪表盘，并实时查看现金流 (Cash) 与技术债 (TechDebt) 状态。
-- `clear`：清理终端输出。
+## Core Simulation Commands
+- `dev`: Executes a full-scale collision for **1 Month (4 Epochs)**. Use this to observe stable trends. Each epoch processes 100,000 agent interactions.
+- `stat`: Invokes the 14D DNA Dashboard. Displays real-time status of **Cash Flow**, **Burn Rate**, and **Technical Debt** (calculated via industry $\lambda$, complexity, and coordination tax).
+- `clear`: Purges the terminal buffer.
 
-## 属性干预指令
-你可以直接在沙盒运行中通过修改向量来观察市场的反馈：
-- `set PERF 0.9`：强制提升产品的性能维度。
-- `set ENTRY 0.1`：模拟提高准入门槛（如增加企业实名认证）。
-- `feature "添加一个支持 AI 自动摘要的功能"`：输入一段自然语言，Cortex AI 会自动将其映射为 14D 向量的扰动。
+## Attribute Intervention
+Modify vectors in real-time to observe immediate market feedback:
+- `set PERF 0.9`: Forcibly increase the product's performance dimension.
+- `set ENTRY 0.1`: Simulate a high-friction entry barrier (e.g., mandatory enterprise KYC).
+- `feature "Add AI-powered auto-summarization"`: Submit natural language. The Cortex AI will map this into 14D vector perturbations.
 
-## 深度审计指令
-- `audit`：当你发现曲线发生异常跳变或陷入停滞时，使用此指令。系统会强制提取当前的极端共鸣值，并生成最新的战略诊断报告。
-- `reset`：彻底擦除当前模拟的所有状态，回归 Day 1 起点。
+## Strategic Audit
+- `audit`: Use this when curves display anomalous jumps or reach a plateau. The system will extract extreme resonance values and generate a deep strategic diagnostic report.
+- `price <amount>`: Adjust your monetization model. This shifts the `Monetize Pressure` (D6) and recalculates the energy gap for conversion.
+- `reset`: Wipe all current state. Return to Day 1 singularity.

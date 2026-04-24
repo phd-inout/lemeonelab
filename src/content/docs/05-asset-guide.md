@@ -1,24 +1,31 @@
 ---
-title: "资产解读指南 (Asset Guide)"
-description: "读懂你的‘商业体检报告’：压力诊断与待办需求。"
+title: "Asset Interpretation Guide"
+description: "Decoding your 'Business Medical Report': Stress Diagnosis and Backlog Demands."
 ---
 
-# 读懂你的“体检报告”
+# Decoding Your "Medical Report"
 
-在 100,000 次碰撞结束后，系统会生成一系列战略资产。这些资产是你进行商业决策的核心依据。
+After 100,000 collisions are processed, the system generates a series of strategic assets. These are the core evidence for your commercial decisions.
 
-## 1. STRESS_TEST_REPORT (商业逻辑压力诊断)
-这是一份针对你商业逻辑的 X 光片。
-- **生存率预估**：综合考虑现金流、技术债与市场排斥反应后的最终得分。
-- **共鸣断裂带**：精准指出你的产品在哪个 DNA 维度上与市场产生了最严重的排斥。例如：“技术性能 (D1) 过剩，但易用性 (D3) 无法支撑非极客用户。”
+## 1. STRESS_TEST_REPORT (Commercial Logic Diagnosis)
+An X-ray of your commercial structural integrity.
+- **Survival Probability**: A final score calculated after weighing cash flow, **Technical Debt**, and market rejection.
+- **Resonance Fault Lines**: Pinpoints the exact DNA dimension where your product suffers the most rejection. *Example: "Excessive Performance (D1) but insufficient Interaction (D3) to support non-power users."*
 
-## 2. PRODUCT_BACKLOG (功能诊断与优化清单)
-这份清单是由 10 万个智能体“集体投票”出的高优先级需求。
-- **自动驾驶预测 (Speculative Execution)**：系统会给出具体的功能调整建议。
-- **副作用预警**：这是最关键的部分。系统会告知你调整后的连锁反应。例如：“降低注册门槛 (提升 D5) 虽能提升短期存活率，但会引入大量低质用户，导致长期转化率 (D6) 稀释。”
+## 2. PRODUCT_BACKLOG (Diagnostic Requirements)
+A high-priority requirement list "voted" on by the collective intelligence of 100,000 agents.
+- **Speculative Execution**: The system provides specific functional adjustment suggestions.
+- **Side-Effect Warnings**: The most critical section. It predicts the chain reactions of your adjustments. *Example: "Lowering Entry Ease (improving D5) will increase short-term survival but introduce low-quality agents, diluting long-term Conversion (D6)."*
 
-## 3. PMF_QUADRANT (受众画像与热力图)
-查看高共鸣人群聚集的坐标。你可以清晰地看到哪些是你的“死忠粉”（Fans），哪些是坚定的“反对者”（Haters），以及他们的 DNA 特征区别。
+## 3. THE SCIENTIFIC TECHDEBT MODEL
+TechDebt in Lemeone-Lab is not a random number. It is calculated through a rigorous scientific function:
+- **Industry Lambda ($\lambda$)**: The base decay rate of your industry's technology.
+- **Product Complexity**: Derived from the density and inter-connectivity of your 14D vector.
+- **Coordination Tax**: An exponential friction coefficient based on team size and communication overhead.
+Managing this debt is critical; if it exceeds your cash flow's ability to service it, the project enters a "Structural Collapse."
 
-## 4. COMPETITIVE_RADAR (行业竞对雷达)
-系统会逆向工程 3 个真实的行业标杆（如 Slack, Notion），并展示你的产品与它们之间的挤压态势。你可以直观看到自己是否正处于某个竞品的“流量黑洞”吞噬范围内。
+## 4. PMF_QUADRANT (Audience Heatmap)
+View the coordinates where high-resonance agents cluster. Distinguish between your **Fans** (high resonance), **Lurkers**, and **Haters**, and analyze the DNA profiles that define each group.
+
+## 5. COMPETITIVE_RADAR (Industry Benchmarking)
+The system reverse-engineers industry icons (e.g., Slack, Notion) to show your product's position in the competitive field. Visualize whether you are being pulled into a competitor's "Traffic Black Hole."

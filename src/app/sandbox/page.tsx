@@ -99,26 +99,26 @@ export default function Home() {
           <div className="flex items-center">
             <HUDStat 
               icon={Users} 
-              label="活跃用户" 
+              label="ACTIVE_USERS" 
               value={sandboxState?.metrics.activePaidUserCount.toLocaleString() || '---'} 
               colorClass="text-cyan-400"
               subValue={sandboxState ? `T+${sandboxState.epoch}` : ''}
             />
             <HUDStat 
               icon={DollarSign} 
-              label="月营收_MRR" 
+              label="REVENUE_MRR" 
               value={sandboxState ? `$${sandboxState.metrics.mrr.toLocaleString()}` : '---'} 
               colorClass="text-green-400"
             />
             <HUDStat 
               icon={ShieldAlert} 
-              label="技术债务" 
+              label="TECH_DEBT" 
               value={sandboxState ? `${sandboxState.techDebt.toFixed(1)}%` : '---'} 
               colorClass="text-yellow-500"
             />
             <HUDStat 
               icon={Activity} 
-              label="生存几率" 
+              label="SURVIVAL" 
               value={sandboxState ? `${(sandboxState.metrics.survivalRate * 100).toFixed(1)}%` : '---'} 
               colorClass={sandboxState?.metrics.survivalRate && sandboxState.metrics.survivalRate > 0.5 ? 'text-green-400' : 'text-red-500'}
             />
@@ -132,7 +132,7 @@ export default function Home() {
           </div>
           <Link href="/docs" className="flex items-center gap-2 text-xs font-bold tracking-widest text-gray-400 hover:text-cyan-400 transition-all border border-gray-800 hover:border-cyan-500/50 px-4 py-2 rounded-md bg-[#111] hover:bg-cyan-500/5 group">
             <BookOpen className="w-3.5 h-3.5 group-hover:animate-bounce" />
-            阅读文档
+            READ DOCS
           </Link>
         </div>
       </header>
@@ -171,7 +171,7 @@ export default function Home() {
              <div className="px-4 py-2 border-b border-gray-800/60 flex justify-between items-center bg-[#0F172A]/40">
                 <div className="flex items-center gap-2">
                   <Zap className="w-3 h-3 text-yellow-500" />
-                  <span className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">战略资产_READER</span>
+                  <span className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">ASSET_STREAM_READER</span>
                 </div>
                 <span className="text-[9px] text-yellow-500/50 font-mono tracking-tighter">ENCRYPTED_STREAM</span>
              </div>

@@ -4,7 +4,7 @@ function calculateCosineSimilarity(v1: Vector14D, v2: Vector14D, weights?: Vecto
   let dotProduct = 0
   let mag1 = 0
   let mag2 = 0
-  for (let i = 0; i < 13; i++) {
+  for (let i = 0; i < 14; i++) {
     const w = weights ? weights[i] : 1
     dotProduct += (v1[i] * v2[i] * w)
     mag1 += (v1[i] * v1[i] * w)

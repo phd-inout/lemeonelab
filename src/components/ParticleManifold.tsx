@@ -21,7 +21,7 @@ function sfc32(a: number, b: number, c: number, d: number) {
 }
 
 /**
- * 13D Particle Manifold (T-SNE approximation) with Physics Engine
+ * 14D Particle Manifold (T-SNE approximation) with Physics Engine
  */
 const ParticleManifold: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -400,7 +400,7 @@ const ParticleManifold: React.FC = () => {
       </div>
 
       <div className="absolute top-2 right-2 bg-black/60 backdrop-blur px-2 py-1 border border-primary/30 rounded text-[9px] text-primary font-mono uppercase tracking-widest pointer-events-none">
-        13D T-SNE Manifold
+        14D T-SNE Manifold
       </div>
 
       {hoveredAgent && (

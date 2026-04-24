@@ -24,34 +24,7 @@ const C = {
     bold: '\x1b[1m',
 }
 
-const getHelpText = (lang: 'en' | 'zh') => lang === 'zh' ? `
-${C.cyan}${C.bold}LEMEONE_LAB v2.0 CLI${C.reset} ${C.gray}— 重力沙盒操作系统 (Gravity Sandbox OS)${C.reset}
-
-${C.bold}项目管理${C.reset}
-  ${C.green}project new "<名称>"${C.reset} - 创建一个新的项目/公司案卷
-  ${C.green}project list${C.reset}         - 列出已有的历史项目
-  ${C.green}project load <ID>${C.reset}    - 切换到指定的项目
-
-${C.bold}初始化${C.reset}
-  ${C.green}scan "<描述>"${C.reset}   - 从文本或文件初始化商业基因扫描
-  ${C.green}tier <等级>${C.reset}     - 升级分辨率 (FREE, PRO, ULTRA, ENTERPRISE)
-
-${C.bold}模拟运行${C.reset}
-  ${C.green}dev [month|num]${C.reset}    - 推进市场周期 (默认 1个月/4 Epochs)
-  ${C.green}reset${C.reset}            - 清除当前模拟状态
-
-${C.bold}向量调参${C.reset}
-  ${C.green}set <dim> <val>${C.reset}  - 调整 14D 维度 (PERF, DEPTH, INTERACT, STABLE, ENTRY...)
-  ${C.green}feature "<描述>"${C.reset} - 将自然语言功能映射到向量空间
-  ${C.green}team <规模>${C.reset}      - 设置资源约束 (SOLO, STARTUP, GROWTH, ENTERPRISE)
-  ${C.green}price <金额>${C.reset}     - 设定客单价 (-y 强制确认)
-
-${C.bold}诊断分析${C.reset}
-  ${C.green}stat${C.reset}             - 显示 14D 向量详情
-  ${C.green}audit${C.reset}            - 触发 AI 战略审计
-
-输入 ${C.green}help${C.reset} / ${C.green}clear${C.reset} / ${C.green}exit${C.reset} 控制终端
-` : `
+const getHelpText = (lang: 'en' | 'zh') => `
 ${C.cyan}${C.bold}LEMEONE_LAB v2.0 CLI${C.reset} ${C.gray}— Gravity Sandbox OS${C.reset}
 
 ${C.bold}Project Management${C.reset}
@@ -163,6 +136,7 @@ export default function TerminalUI() {
                 const newLang = args[0]?.toLowerCase()
                 if (newLang === 'en' || newLang === 'zh') {
                     setLang(newLang as 'en' | 'zh')
+                    print(`${C.green}[SYSTEM] Language switched to ${newLang}${C.reset}`)
                 }
                 break
             case 'clear':
@@ -172,23 +146,38 @@ export default function TerminalUI() {
                 const subCmd = args[0]?.toLowerCase()
                 if (subCmd === 'new') {
                     const name = args.slice(1).join(' ')
-                    if (name) await useLemeoneStore.getState().createProject(name)
+                    if (name) {
+                        print(`${C.cyan}[PROJECT] Creating: ${name}...${C.reset}`)
+                        await useLemeoneStore.getState().createProject(name)
+                    }
                 } else if (subCmd === 'list') {
                     const projects = useLemeoneStore.getState().projectsList
-                    print(`\n${C.cyan}╔═ PROJECTS LIST ═════════════════════════╗${C.reset}`)
-                    projects.forEach(p => {
-                        const isCurrent = p.id === useLemeoneStore.getState().activeProjectId
-                        print(`${C.cyan}║${C.reset} ${isCurrent ? C.green + '*' : ' '} ${p.id.substring(0,8)} | ${p.name}`)
-                    })
-                    print(`${C.cyan}╚═════════════════════════════════════════╝${C.reset}`)
+                    if (projects.length === 0) {
+                        print(`${C.gray}No projects found.${C.reset}`)
+                    } else {
+                        print(`\n${C.cyan}╔═ PROJECTS LIST ═════════════════════════╗${C.reset}`)
+                        projects.forEach(p => {
+                            const isCurrent = p.id === useLemeoneStore.getState().activeProjectId
+                            print(`${C.cyan}║${C.reset} ${isCurrent ? C.green + '*' : ' '} ${p.id.substring(0,8)} | ${p.name}`)
+                        })
+                        print(`${C.cyan}╚═════════════════════════════════════════╝${C.reset}`)
+                    }
                 } else if (subCmd === 'load') {
                     const searchId = args[1]
                     const project = useLemeoneStore.getState().projectsList.find(p => p.id.startsWith(searchId))
-                    if (project) await useLemeoneStore.getState().loadProject(project.id)
+                    if (project) {
+                        print(`${C.cyan}[PROJECT] Loading ${project.name}...${C.reset}`)
+                        await useLemeoneStore.getState().loadProject(project.id)
+                    } else {
+                        print(`${C.red}[ERR] Project ID mismatch.${C.reset}`)
+                    }
                 }
                 break
             case 'scan':
-                if (args.length > 0) await initSimulation(args.join(' '))
+                if (args.length > 0) {
+                    print(`${C.cyan}[PARSING] Scanning business DNA...${C.reset}`)
+                    await initSimulation(args.join(' '))
+                }
                 break
             case 'tier':
                 const newTier = args[0]?.toUpperCase() as any
@@ -197,7 +186,7 @@ export default function TerminalUI() {
             case 'dev': {
                 const isMonth = args[0]?.toLowerCase() === 'month' || args.length === 0;
                 const steps = isMonth ? 4 : (parseInt(args[0]) || 1);
-                print(`${C.green}[COLLISION] Advancing ${isMonth ? '1 month' : steps + ' epochs'}...${C.reset}`);
+                print(`${C.green}[COLLISION] Advancing ${isMonth ? '1 market month' : steps + ' epochs'}...${C.reset}`);
                 for (let i = 0; i < steps; i++) await step();
                 break;
             }
@@ -217,7 +206,7 @@ export default function TerminalUI() {
                 const pValue = parseFloat(args[0])
                 if (!isNaN(pValue)) {
                     setARPU(pValue)
-                    print(`${C.green}[✓ OK] ARPU set to $${pValue}${C.reset}`)
+                    print(`${C.green}[✓ OK] ARPU set to $${pValue}/mo${C.reset}`)
                 }
                 break
             case 'stat': {
@@ -237,6 +226,7 @@ export default function TerminalUI() {
             case 'reset':
                 reset()
                 term.clear()
+                print(`${C.yellow}[SYSTEM] Simulation reset. Memory cleared.${C.reset}`)
                 break
             case 'exit':
                 print(`${C.gray}Connection closed.${C.reset}`)

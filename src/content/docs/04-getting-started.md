@@ -1,25 +1,25 @@
 ---
-title: "如何开始测试 (Getting Started)"
-description: "通过 Cortex 种子收割协议，轻松开启你的 14D DNA 提取。"
+title: "How to Start Testing"
+description: "Initiate your 14D DNA extraction via the Cortex Seed Harvesting Protocol."
 ---
 
-# 如何开始您的测试
+# How to Start Your Test
 
-在 Lemeone-Lab，你不必非要准备一份完美的 PRD 或商业计划书才能开始。我们内置了 **Cortex Interviewer** 对话式引导引擎，像一名犀利的 VC 投资人一样帮你梳理逻辑。
+At Lemeone-Lab, you don't need a polished PRD or a perfect business plan to begin. We have integrated the **Cortex Interviewer**, a conversational guidance engine that interrogates your logic like a seasoned venture capitalist.
 
-## 三阶段引导流程
+## The Three-Phase Protocol
 
-### Phase 1: 模糊探测 (Fuzzy Detection)
-你可以输入一个非常粗略的想法（例如：“我想做一个去中心化的音乐分发平台”）。系统会立即进行初步的逻辑完整性检查，识别那些你还没想清楚的“逻辑断裂带”。
+### Phase 1: Fuzzy Detection
+Input a raw, fragmented idea (e.g., "I want to build a decentralized music distribution platform"). The system will immediately perform a preliminary logic integrity check, identifying "logical fault lines" where your assumptions are weak.
 
-### Phase 2: 递归追问 (Recursive Audit)
-针对缺失的产品设定，Cortex AI 会发起定向追问：
-- *“你打算如何解决版权持有人的首月迁移成本？”*
-- *“你的技术栈是否支持 50ms 以内的流媒体分发延迟？”*
-AI 会以一种高效、冷峻的风格，强迫你补全 14D 基因组的关键拼图。
+### Phase 2: Recursive Audit
+For every missing product parameter, the Cortex AI will initiate a targeted interrogation:
+- *"How do you intend to mitigate the first-month migration cost for copyright holders?"*
+- *"Does your tech stack support streaming distribution latency under 50ms?"*
+The AI operates with a cold, efficient style, forcing you to complete the critical pieces of your 14D genome.
 
-### Phase 3: 语义固化 (Semantic Solidification)
-当逻辑闭环达成，系统会在后台动态生成 **DRAFT_SPEC.md**。此时，系统会运行一个“百人级别”的微型碰撞，初步向你展示这项决策的风险边界。
+### Phase 3: Semantic Solidification
+Once a logical loop is achieved, the system dynamically generates a **DRAFT_SPEC.md** in the background. At this stage, a "micro-collision" involving 100 agents is executed to reveal the initial risk boundaries of your decisions.
 
-## 启动沙盒
-一旦 DNA 提取完成，你将被带入 **Gravity Sandbox**。在这里，真正的 100,000 人级别的全量压力测试将正式启动。
+## Launching the Sandbox
+Once DNA extraction is finalized, you will be granted access to the **Gravity Sandbox**. Here, the true 100,000-agent full-scale stress test begins.

@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import { notFound } from 'next/navigation'
+import { Hash, Calendar, BookOpen } from 'lucide-react'
 
 type Props = {
   params: Promise<{
@@ -42,32 +43,47 @@ export default async function DocPage({ params }: Props) {
   }
 
   return (
-    <article className="prose prose-invert prose-green max-w-none animate-fade-in pb-20">
-      <div className="mb-10 border-b border-border-dark pb-6">
-        <h1 className="text-3xl font-bold font-display text-white mb-2 tracking-wide">
+    <article className="animate-in fade-in slide-in-from-right-4 duration-700 pb-32">
+      {/* Header Metadata */}
+      <header className="mb-12">
+        <div className="flex items-center gap-3 mb-4 text-cyan-500/60 font-bold text-[10px] tracking-[0.2em] uppercase">
+           <Hash className="w-3 h-3" />
+           <span>Protocol_Entry: {resolvedParams.slug}</span>
+           <span className="text-gray-800">|</span>
+           <Calendar className="w-3 h-3" />
+           <span>Updated: 2026.04.24</span>
+        </div>
+        
+        <h1 className="text-4xl font-display font-bold text-white mb-6 tracking-tight uppercase leading-tight">
           {docData.title}
         </h1>
+        
         {docData.description && (
-          <p className="text-gray-400 text-lg">{docData.description}</p>
+          <div className="relative p-6 bg-cyan-500/5 border-l-2 border-cyan-500 rounded-r-lg">
+             <p className="text-gray-400 text-lg font-medium leading-relaxed italic">
+               "{docData.description}"
+             </p>
+             <BookOpen className="absolute top-2 right-4 w-12 h-12 text-cyan-500/10 pointer-events-none" />
+          </div>
         )}
-      </div>
+      </header>
       
-      {/* 
-        这里我们使用 react-markdown 渲染，配置 remarkGfm 开启表格/删除线等 Github 格式
-        rehypeRaw 允许在 MD 中书写 HTML 标签（按需开启）
-      */}
-      <div className="markdown-body font-sans text-gray-300 leading-relaxed space-y-6
-        [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:text-white [&>h2]:mt-10 [&>h2]:mb-4 [&>h2]:border-b [&>h2]:border-border-dark [&>h2]:pb-2
-        [&>h3]:text-xl [&>h3]:font-bold [&>h3]:text-gray-200 [&>h3]:mt-8 [&>h3]:mb-3
-        [&>p]:mb-4
-        [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:mb-4 [&>ul>li]:mb-1
-        [&>ol]:list-decimal [&>ol]:pl-6 [&>ol]:mb-4 [&>ol>li]:mb-1
-        [&>blockquote]:border-l-4 [&>blockquote]:border-primary/50 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:text-gray-400 [&>blockquote]:bg-primary/5 [&>blockquote]:py-2 [&>blockquote]:pr-4 [&>blockquote]:my-6 [&>blockquote]:rounded-r
-        [&>strong]:text-primary [&>strong]:font-semibold
-        [&>code]:text-primary [&>code]:bg-primary/10 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded [&>code]:font-mono [&>code]:text-sm
-        [&>pre]:bg-[#0f0f0f] [&>pre]:border [&>pre]:border-border-dark [&>pre]:p-4 [&>pre]:rounded-md [&>pre]:overflow-x-auto [&>pre]:my-6
-        [&>pre>code]:bg-transparent [&>pre>code]:text-gray-300 [&>pre>code]:p-0
-        [&>hr]:border-border-dark [&>hr]:my-8
+      {/* Markdown Body with Industrial/Cyberpunk styling */}
+      <div className="markdown-body font-sans text-gray-300 leading-relaxed space-y-8
+        [&>h2]:text-2xl [&>h2]:font-display [&>h2]:font-bold [&>h2]:text-white [&>h2]:mt-16 [&>h2]:mb-6 [&>h2]:border-b [&>h2]:border-gray-800 [&>h2]:pb-3 [&>h2]:uppercase [&>h2]:tracking-widest
+        [&>h3]:text-lg [&>h3]:font-display [&>h3]:font-bold [&>h3]:text-cyan-400 [&>h3]:mt-10 [&>h3]:mb-4 [&>h3]:tracking-wide
+        [&>p]:text-base [&>p]:mb-6 [&>p]:leading-8
+        [&>ul]:list-none [&>ul]:pl-0 [&>ul]:mb-8 [&>ul>li]:relative [&>ul>li]:pl-6 [&>ul>li]:mb-3 [&>ul>li::before]:content-['>'] [&>ul>li::before]:absolute [&>ul>li::before]:left-0 [&>ul>li::before]:text-cyan-500 [&>ul>li::before]:font-bold [&>ul>li::before]:text-[10px] [&>ul>li::before]:top-2
+        [&>ol]:list-decimal [&>ol]:pl-6 [&>ol]:mb-8 [&>ol>li]:mb-3 [&>ol>li]:marker:text-cyan-500 [&>ol>li]:marker:font-bold
+        [&>blockquote]:border-l-2 [&>blockquote]:border-cyan-500/30 [&>blockquote]:pl-6 [&>blockquote]:italic [&>blockquote]:text-gray-500 [&>blockquote]:bg-white/[0.02] [&>blockquote]:py-4 [&>blockquote]:pr-6 [&>blockquote]:my-8 [&>blockquote]:rounded-r-xl
+        [&>strong]:text-white [&>strong]:font-bold
+        [&>code]:text-cyan-300 [&>code]:bg-cyan-500/10 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded [&>code]:font-display [&>code]:text-sm
+        [&>pre]:bg-[#050505] [&>pre]:border [&>pre]:border-gray-800 [&>pre]:p-6 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>pre]:my-8 [&>pre]:shadow-inner
+        [&>pre>code]:bg-transparent [&>pre>code]:text-gray-300 [&>pre>code]:p-0 [&>pre>code]:text-xs
+        [&>hr]:border-gray-800 [&>hr]:my-16
+        [&>table]:w-full [&>table]:border-collapse [&>table]:my-8 [&>table]:text-sm
+        [&>table_th]:bg-cyan-500/10 [&>table_th]:text-cyan-400 [&>table_th]:font-bold [&>table_th]:p-3 [&>table_th]:border [&>table_th]:border-gray-800 [&>table_th]:text-left
+        [&>table_td]:p-3 [&>table_td]:border [&>table_td]:border-gray-800 [&>table_td]:text-gray-400
       ">
         <ReactMarkdown 
           remarkPlugins={[remarkGfm]} 
@@ -76,6 +92,15 @@ export default async function DocPage({ params }: Props) {
           {docData.contentMd}
         </ReactMarkdown>
       </div>
+
+      {/* Navigation Footer */}
+      <footer className="mt-20 pt-10 border-t border-gray-900 flex justify-between items-center text-[10px] font-bold text-gray-600 uppercase tracking-widest">
+         <span>End_of_Protocol</span>
+         <div className="flex gap-4">
+            <span className="hover:text-cyan-500 cursor-pointer transition-colors">Print_Hardcopy</span>
+            <span className="hover:text-cyan-500 cursor-pointer transition-colors">Download_PDF</span>
+         </div>
+      </footer>
     </article>
   )
 }

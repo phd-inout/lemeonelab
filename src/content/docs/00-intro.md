@@ -1,20 +1,20 @@
 ---
-title: "平台简介 (Introduction)"
-description: "理解 Lemeone-Lab：商业逻辑的 X 光机。"
+title: "Introduction"
+description: "Understanding Lemeone-Lab: The X-Ray of Business Logic."
 ---
 
-# 平台简介
+# Platform Introduction
 
-欢迎来到 **Lemeone-Lab 2.0**。请注意，这**不是**一个普通的 LLM 聊天助手，而是一台**“商业逻辑的 X 光机”**。
+Welcome to **Lemeone-Lab 2.0**. Be advised: this is **not** your typical LLM-powered chatbot. It is an **"X-Ray for Business Logic."**
 
-## 系统定位
-Lemeone-Lab 是一个基于 **DRTA (Deep Resonance Transformation Algorithm)** 算法的多维向量决策支持系统。我们的目标不是为你写商业计划书，而是对你的商业逻辑进行具有现实引力的**确定性压力测试**。
+## System Positioning
+Lemeone-Lab is a multi-dimensional vector decision support system powered by the **DRTA (Deep Resonance Transformation Algorithm)**. Our objective is not to write your business plan, but to subject your commercial logic to a **deterministic stress test** governed by the cold laws of market gravity.
 
-## 核心运行机制
-不同于传统商业模拟的“规则推演”，Lemeone-Lab 在沙盒中引入了高达 **100,000 个具有独立 DNA 的虚拟智能体 (Agents)**。
+## Core Operational Mechanics
+Unlike traditional business simulations based on "rule inference," Lemeone-Lab introduces up to **100,000 virtual Agents**, each possessing a unique and self-consistent DNA.
 
-1. **向量化**：系统将你的产品描述拆解为 14 个物理维度的 DNA 向量。
-2. **高频碰撞**：每一个 Agents 都会与你的产品向量进行“共鸣碰撞”。
-3. **自然涌现**：转化率、存活率和活跃度不是由 AI 猜出来的，而是这 10 万次碰撞在数学场中的**统计坍缩结果**。
+1. **Vectorization**: The system deconstructs your product description into a DNA vector across 14 distinct physical dimensions.
+2. **High-Frequency Collision**: Every Agent in the sandbox undergoes a "Resonance Collision" with your product vector.
+3. **Natural Emergence**: Conversion rates, survival metrics, and retention are not "guessed" by an AI. They are the **statistical collapse** of 100,000 mathematical collisions within the field.
 
-在这里，你的每一个功能决策都会实时改变市场重力常数，决定你的项目是飞向星辰还是坠入深渊。
+In this environment, every feature decision shifts the market's gravitational constant, determining whether your project ascends to the stars or collapses into a singularity.
