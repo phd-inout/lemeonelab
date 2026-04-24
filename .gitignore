@@ -46,3 +46,9 @@ next-env.d.ts
 /packages/drta-engine/node_modules
 
 /src/generated/prisma
+
+# local database
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
