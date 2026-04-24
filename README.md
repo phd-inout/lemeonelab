@@ -11,29 +11,16 @@ Optimized for professional product managers and strategic researchers.
 
 - **Scientific TechDebt Model**: Dynamic debt accumulation based on industry-specific entropy ($\lambda$), product core complexity, and team coordination tax.
 - **14-Dimensional DNA Model**: Comprehensive modeling of products across 14 dimensions (Core Architecture, Monetization, Market Dynamics, Strategy, and GTM Awareness).
-- **Monthly Simulation Cycle**: The `dev` command now defaults to a 1-month market progression (4 Epochs), providing higher-fidelity growth and churn visualization.
-- **HUD-Style HUD Interface**: A redesigned, cyberpunk-inspired laboratory dashboard with real-time telemetry (MRR, Tech Debt, Survival Rate) and a 14D DNA side-radar.
-- **Protocol Documentation**: A fully integrated Knowledge Base (Reference Repository) explaining the underlying physics and mathematical constants of the simulation.
+- **Monthly Simulation Cycle**: The `dev` command now defaults to a 1-month market progression (4 Epochs).
+- **HUD-Style Interface**: A redesigned, cyberpunk-inspired laboratory dashboard with real-time telemetry and a 14D DNA side-radar.
 - **Gravity vs. Weather**: Structural industry DNA (Gravity) interacts with real-time news perturbations (Weather) via Gemini Search.
-
-## 🛠 Tech Stack
-
-- **Framework**: Next.js 16 (Turbopack)
-- **AI Engine**: Google AI SDK (Gemini 3.1 Flash)
-- **Mathematical Core**: @lemeone/drta-engine (Dual-Track Resonance Transformation Algorithm)
-- **Database**: SQLite (Local-first persistence)
-- **UI**: Xterm.js (Terminal), Lucide Icons, Cyberpunk CRT Effects
 
 ---
 
 ## 🏁 Getting Started
 
-### 1. Prerequisites
-- **Node.js**: v20 or higher.
-- **Gemini API Key**: Essential for Cortex AI features. [Get it for free here](https://aistudio.google.com/).
-
-### 2. Local Setup (Recommended)
-Clone the repository and initialize the sandbox environment locally:
+### Option A: Web Dashboard (Full Experience)
+The recommended way to visualize the 14D particle manifold and growth curves.
 
 ```bash
 # 1. Clone & Enter
@@ -45,28 +32,29 @@ npm install
 
 # 3. Set Environment Variable
 export GOOGLE_GENERATIVE_AI_API_KEY="your_api_key_here"
-# OR: create a .env file in the root:
-# GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here
 
-# 4. Initialize local database
+# 4. Initialize & Launch
 npx prisma db push
-
-# 5. Launch Simulation
 npm run dev
 ```
 
-### 3. Quick Run (via npx)
-If you just want to take a quick peek (requires the package to be published to npm):
+### Option B: Gemini CLI Skill (Pro & Lightweight)
+Perform 14D audits and market simulations directly in your terminal dialogue without running the web server.
+
 ```bash
-export GOOGLE_GENERATIVE_AI_API_KEY="your_key"
-npx lemeone-lab
+# Install the skill into your Gemini CLI workspace
+gemini skills install business-intelligence.skill --scope workspace
+
+# Reload to activate
+/skills reload
 ```
+**Usage**: Just ask Gemini: *"Audit this project idea using business-intelligence skill: [description]"*
 
 ---
 
 ## 🔬 Validation Benchmarks
 
-Lemeone-Lab's DRTA engine has been cross-validated against historical market data to ensure mathematical consistency.
+Lemeone-Lab's DRTA engine has been cross-validated against historical market data:
 
 | Case Study | Validation Goal | Simulation (Conv. Rate) | Ground Truth |
 | :--- | :--- | :--- | :--- |
@@ -75,11 +63,10 @@ Lemeone-Lab's DRTA engine has been cross-validated against historical market dat
 | **Zoom (2013)** | Zero-Friction B2B Conversion | **4.8%** | ✅ Match (4% - 5%) |
 | **Discord (2015)** | High-Engagement / Low-Revenue | **1.6%** | ✅ Match (~1.5%) |
 | **Notion (2018)** | Community-Driven Vertical Growth | **7.5%** | ✅ Match (5% - 10%) |
-| **Quibi (2020)** | PMF Misalignment Risk | **Fast Churn / Bankruptcy** | ✅ Predicted Failure |
 
 ---
 
-## 📜 Terminal Command Reference
+## 📜 Terminal Command Reference (Web UI)
 
 | Command | Action | Impact |
 | :--- | :--- | :--- |
@@ -89,7 +76,6 @@ Lemeone-Lab's DRTA engine has been cross-validated against historical market dat
 | `dev [num]` | Advance specific weeks | Granular simulation control |
 | `stat` | View 14D Radar & Metrics | Real-time state diagnosis |
 | `feature "desc"` | Natural Language Injection | Adds feature + dynamic TechDebt |
-| `price [val]` | Set ARPU / Hardware price | Influences MRR & conversion |
 | `audit` | Generate Strategic Report | AI Deep-dive analysis |
 | `reset` | System wipe | Clears all simulation memory |
 
