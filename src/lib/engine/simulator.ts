@@ -5,25 +5,19 @@ import {
   PopulationSeed,
 } from './types'
 import { v4 as uuidv4 } from 'uuid'
+import * as drta from '@lemeone/drta-engine'
 
 /**
  * System 1: DRTA Gravity Engine
  * Optimized DRTA 2.5: 14-Dimensional Decoupled Funnel
+ * 
+ * Note: Core physics logic has been moved to @lemeone/drta-engine 
+ * to ensure mathematical consistency across platforms.
  */
 
-// Cosine Similarity with Weights (Normalized)
+// Wrappers for backward compatibility within the main app
 export function calculateCosineSimilarity(v1: Vector14D, v2: Vector14D, weights?: Vector14D): number {
-  let dotProduct = 0
-  let mag1 = 0
-  let mag2 = 0
-  for (let i = 0; i < 13; i++) { // Core + Market + Future (exclude Awareness)
-    const w = weights ? weights[i] : 1
-    dotProduct += (v1[i] * v2[i] * w)
-    mag1 += (v1[i] * v1[i] * w)
-    mag2 += (v2[i] * v2[i] * w)
-  }
-  const denominator = Math.sqrt(mag1) * Math.sqrt(mag2)
-  return denominator === 0 ? 0 : Math.min(1, dotProduct / denominator)
+  return drta.calculateCosineSimilarity(v1, v2, weights)
 }
 
 export function runCollision(
@@ -33,20 +27,7 @@ export function runCollision(
   previousPaidUsers: number,
   weights: Vector14D = [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 ): AgentDNA[] {
-  return population.map(agent => {
-    const cosSim = calculateCosineSimilarity(productVector, agent.vector as any, weights)
-    const rCos = Math.pow(Math.max(0, cosSim), 3)
-
-    let magDiff = 0
-    for(let i=0; i<13; i++) magDiff += Math.pow(productVector[i] - agent.vector[i], 2)
-    const alpha = agent.isOutlier ? 1.5 : 0.8 
-    const pDist = Math.exp(-alpha * magDiff)
-
-    return {
-      ...agent,
-      resonance: rCos * pDist
-    }
-  })
+  return drta.runCollision(productVector, techDebt, population, previousPaidUsers, weights) as AgentDNA[]
 }
 
 export async function runCollisionAsync(
@@ -65,102 +46,21 @@ export function calculateMetrics(
     techDebt: number, 
     teamSize: string,
     previousActiveUsers: number = 0,
-    arpu: number = 45
+    monetization: { model: any; hardwarePrice: number; monthlyFee: number } = { model: 'SUBSCRIPTION', hardwarePrice: 0, monthlyFee: 45 }
 ) {
-  const R0 = 0.35; 
-  const k = 12;   
-  const lambda = 0.5; 
-
-  let totalResonance = 0;
-  population.forEach(agent => totalResonance += agent.resonance);
-  const avgResonance = population.length > 0 ? totalResonance / population.length : 0;
-
-  const retentionRate = Math.min(0.99, 1 / (1 + Math.exp(-15 * (avgResonance - 0.25))));
-  const retainedActiveUsers = Math.floor(previousActiveUsers * retentionRate);
-
-  const newAwareAgentsCount = Math.floor((population.length - previousActiveUsers) * productVector[13] * 0.2);
-  let newActiveUsers = 0;
-
-  for (let i = 0; i < newAwareAgentsCount; i++) {
-      const sample = population[Math.floor(Math.random() * population.length)];
-      const pConv = 1 / (1 + Math.exp(-k * (sample.resonance - R0)));
-      const entryEase = productVector[4];
-      const techPenalty = Math.exp(-lambda * (techDebt / 100));
-      if (Math.random() < (pConv * entryEase * techPenalty)) {
-          newActiveUsers++;
-      }
-  }
-
-  const totalActiveUsers = retainedActiveUsers + newActiveUsers;
-  
-  let paidUsers = 0;
-  const activeAgents = population.filter(a => a.resonance > R0); 
-  const sampleSize = Math.min(activeAgents.length, 2000);
-  let samplePaidCount = 0;
-  
-  for (let i = 0; i < sampleSize; i++) {
-      const agent = activeAgents[Math.floor(Math.random() * activeAgents.length)];
-      
-      const resonance = agent.resonance;
-      const pressure = productVector[5]; // D6 Monetize Pressure
-      
-      // 1. Rational Probability (The Fermi Transition)
-      const barrier = 1.0 - pressure;
-      const energyGap = (barrier - resonance * 0.8) * 10.0;
-      const pRational = 1.0 / (1.0 + Math.exp(energyGap));
-      
-      // 2. Emotional/Entropy Probability (The Fan Constant)
-      const pEntropy = 0.015 * resonance;
-      
-      // 3. Final Probability Density
-      const pPay = (pRational * pressure * 0.38) + pEntropy;
-      
-      if (Math.random() < Math.min(0.98, pPay)) {
-          samplePaidCount++;
-      }
-  }
-  
-  const emergentMonetizationRate = sampleSize > 0 ? (samplePaidCount / sampleSize) : 0;
-  paidUsers = Math.floor(totalActiveUsers * emergentMonetizationRate);
-  
-  // MRR: driven by industry-specific ARPU (injected from IndustryProfile)
-  const mrr = paidUsers * arpu;
-  
-  // Survival Rate: Pure physics formula (no cash dependency)
-  // Based on: resonance strength, tech debt decay, and conversion health
-  const resonanceHealth = Math.min(1, avgResonance / 0.5); // 0.5 resonance = full health
-  const techDebtDecay = Math.exp(-0.02 * techDebt); // exponential decay with debt
-  const conversionHealth = Math.min(1, emergentMonetizationRate / 0.05); // 5% conversion = healthy
-  const barrierStrength = productVector[10] * 0.3; // D11 Barriers contribute to survival
-  
-  const survivalRate = Math.min(1.0, Math.max(0.05,
-    resonanceHealth * 0.4 +       // 40% weight: product-market fit
-    techDebtDecay * 0.25 +         // 25% weight: system integrity
-    conversionHealth * 0.2 +       // 20% weight: revenue capability
-    barrierStrength +              // 15% weight (0.3*0.5 max): moat
-    (avgResonance > 0.3 ? 0.05 : 0) // bonus for crossing resonance threshold
-  ));
-
-  return {
-    avgResonance,
-    conversionRate: population.length > 0 ? paidUsers / population.length : 0,
-    earningPotential: paidUsers,
-    activePaidUserCount: totalActiveUsers,
-    mrr,
-    survivalRate: Math.min(1, survivalRate)
-  }
+  return drta.calculateMetrics(population as any, productVector, techDebt, teamSize, previousActiveUsers, monetization as any)
 }
 
-export async function stepSimulation(state: SandboxState, arpu: number = 45): Promise<SandboxState> {
+export async function stepSimulation(state: SandboxState): Promise<SandboxState> {
   const nextEpoch = state.epoch + 1;
   const weights: Vector14D = [1,1,1,1,1,1,1,1,1,1,1,1,1,1];
   const previousActiveUsers = state.metrics.activePaidUserCount || 0;
-  const userDensity = previousActiveUsers / state.agents.length;
+  const userDensity = state.agents.length > 0 ? previousActiveUsers / state.agents.length : 0;
 
   const nextProductVector = [...state.productVector] as Vector14D;
-  const performanceBonus = Math.max(0, state.metrics.avgResonance - 0.3) * 0.01;
-  nextProductVector[8] = Math.min(1.0, nextProductVector[8] + performanceBonus); // D9 consistency
-  nextProductVector[6] = Math.min(1.0, nextProductVector[6] + (userDensity * 0.5)); // D7 Unique
+  const performanceBonus = Math.max(0, (state.metrics.avgResonance || 0) - 0.3) * 0.01;
+  nextProductVector[8] = Math.min(1.0, (nextProductVector[8] || 0) + performanceBonus); // D9 consistency
+  nextProductVector[6] = Math.min(1.0, (nextProductVector[6] || 0) + (userDensity * 0.5)); // D7 Unique
 
   // Clone agents to avoid mutating the input state (immutability)
   let agentsClone = state.agents.map(a => ({ ...a, vector: [...a.vector] as Vector14D }));
@@ -175,15 +75,15 @@ export async function stepSimulation(state: SandboxState, arpu: number = 45): Pr
       });
   }
 
-  const viralGrowth = state.productVector[7] * userDensity * 0.8; // D8 Social
-  nextProductVector[13] = Math.min(1.0, nextProductVector[13] + viralGrowth + 0.002);
+  const viralGrowth = (state.productVector[7] || 0) * userDensity * 0.8; // D8 Social
+  nextProductVector[13] = Math.min(1.0, (nextProductVector[13] || 0) + viralGrowth + 0.002);
 
   const teamSize = (state as any).teamSize || 'STARTUP';
   const techDebtBump = teamSize === 'SOLO' ? 1 : teamSize === 'STARTUP' ? 3 : 8;
   const nextTechDebt = state.techDebt + techDebtBump;
 
   const updatedAgents = await runCollisionAsync(nextProductVector, nextTechDebt, agentsClone, previousActiveUsers, weights);
-  const metrics = calculateMetrics(updatedAgents, nextProductVector, nextTechDebt, teamSize, previousActiveUsers, arpu);
+  const metrics = calculateMetrics(updatedAgents, nextProductVector, nextTechDebt, teamSize, previousActiveUsers, state.monetization);
 
   return {
     ...state,
@@ -191,7 +91,7 @@ export async function stepSimulation(state: SandboxState, arpu: number = 45): Pr
     techDebt: nextTechDebt,
     productVector: nextProductVector,
     agents: updatedAgents,
-    metrics,
+    metrics: metrics as any,
     history: [...(state.history || []), {
         epoch: nextEpoch,
         users: metrics.earningPotential,
@@ -204,38 +104,5 @@ export async function stepSimulation(state: SandboxState, arpu: number = 45): Pr
 }
 
 export function generatePopulation(seed: PopulationSeed, count: number = 10000): AgentDNA[] {
-  const agents: AgentDNA[] = []
-  const { mean, std, outliers } = seed
-  const dimCount = mean.length;
-
-  if (outliers && outliers.length > 0) {
-    const outlierCount = Math.min(Math.floor(count * 0.02), outliers.length * 20)
-    for (let i = 0; i < outlierCount; i++) {
-        const source = outliers[i % outliers.length]
-        agents.push({
-            id: `outlier-${uuidv4()}`,
-            vector: (source as any).dna || source,
-            resonance: 0,
-            isOutlier: true
-        })
-    }
-  }
-
-  const remainingCount = count - agents.length
-  for (let i = 0; i < remainingCount; i++) {
-    const vector = new Array(dimCount);
-    for (let d = 0; d < dimCount; d++) {
-      const u1 = Math.random()
-      const u2 = Math.random()
-      const z0 = Math.sqrt(-2.0 * Math.log(u1 + 1e-9)) * Math.cos(2.0 * Math.PI * u2)
-      const val = mean[d] + z0 * std[d]
-      vector[d] = Math.max(0, Math.min(1, val))
-    }
-    agents.push({
-      id: uuidv4(),
-      vector: vector as any,
-      resonance: 0
-    })
-  }
-  return agents
+  return drta.generatePopulation(seed, count, uuidv4) as AgentDNA[]
 }

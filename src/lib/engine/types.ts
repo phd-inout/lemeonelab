@@ -45,12 +45,13 @@ export interface ProductVector {
 export type CompanyStage = 'SEED' | 'MVP' | 'PMF' | 'SCALE' | 'IPO' | 'TITAN'
 export type TeamSize = 'SOLO' | 'STARTUP' | 'GROWTH' | 'ENTERPRISE'
 export type UserTier = 'FREE' | 'PRO' | 'ULTRA' | 'ENTERPRISE'
+export type MonetizationModel = 'ONE_TIME' | 'SUBSCRIPTION' | 'HYBRID'
 
 export const TIER_LIMITS: Record<UserTier, { maxAgents: number; maxAuditsPerWeek: number }> = {
   FREE: { maxAgents: 100, maxAuditsPerWeek: 1 },
   PRO: { maxAgents: 10000, maxAuditsPerWeek: 10 },
   ULTRA: { maxAgents: 50000, maxAuditsPerWeek: 50 },
-  ENTERPRISE: { maxAgents: 200000, maxAuditsPerWeek: 999 },
+  ENTERPRISE: { maxAgents: 100000, maxAuditsPerWeek: 999 },
 }
 
 /**
@@ -72,7 +73,12 @@ export interface SandboxState {
   techDebt: number
   currentStage: CompanyStage
   seedText: string
-  userARPU: number
+  userARPU: number // For compatibility, will store monthly fee or weighted average
+  monetization: {
+    model: MonetizationModel
+    hardwarePrice: number
+    monthlyFee: number
+  }
   industryId: string | null
   industryName: string | null
   industryBaselineARPU: number

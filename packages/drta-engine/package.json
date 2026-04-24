@@ -1,0 +1,25 @@
+{
+  "name": "@lemeone/drta-engine",
+  "version": "2.5.0",
+  "description": "Deep Resonance Transformation Algorithm (DRTA) v2.5 for business simulation.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --minify --clean",
+    "obfuscate": "javascript-obfuscator dist/index.js --output dist/index.obfuscated.js"
+  },
+  "keywords": [
+    "drta",
+    "simulation",
+    "business",
+    "vector",
+    "resonance"
+  ],
+  "author": "penghaidong",
+  "license": "MIT",
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "javascript-obfuscator": "^4.1.0"
+  }
+}

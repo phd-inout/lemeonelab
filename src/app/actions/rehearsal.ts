@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { SandboxState } from '@/lib/engine/types'
 import { createClient } from '@/utils/supabase/server'
 import { prisma } from '@/lib/prisma'
+import { syncUserWithPrisma } from '@/lib/auth-sync'
 
 /**
  * Creates a brand new Rehearsal record for the 2.0 Gravity Sandbox.
@@ -12,6 +13,10 @@ export async function createRehearsal(sessionId: string, projectId: string, stat
     try {
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
+
+        if (user) {
+            await syncUserWithPrisma(user);
+        }
 
         const rehearsal = await prisma.rehearsal.create({
             data: {

@@ -1,6 +1,6 @@
 "use server";
 
-import { loadIndustryProfile, IndustryContext } from './industry-loader'
+import { loadIndustryProfile, IndustryContext, getAllIndustries, matchIndustry } from './industry-loader'
 
 import fs from 'fs'
 import path from 'path'
@@ -18,6 +18,12 @@ export async function getIndustryContext(text: string): Promise<IndustryContext 
 }
 
 export interface ScannerResponse {
+  selected_industry_id?: string;
+  monetization?: {
+    model: MonetizationModel;
+    hardware_price: number;
+    monthly_fee: number;
+  };
   reasoning_chain?: { dim: string; evidence: string; deduction: string }[];
   seed: PopulationSeed;
   terminalOutput: string;
@@ -44,12 +50,9 @@ const model = google('gemini-3.1-flash-lite-preview')
 export async function scanSeed(history: string[], currentDraft: string): Promise<ScannerResponse> {
   const fullText = (currentDraft + " " + history.join(" ")).substring(0, 10000);
   
-  // Load Industry Knowledge via shared loader
-  let industryKnowledge = "";
-  const industryCtx = loadIndustryProfile(fullText);
-  if (industryCtx) {
-    industryKnowledge = `\n=== 系统已自动锁定单一行业知识库 (${industryCtx.filename}) ===\n${industryCtx.rawMarkdown}\n`;
-  }
+  // Dynamic Industry Selection (Semantic AI Lock)
+  const availableIndustries = getAllIndustries();
+  const industryListStr = availableIndustries.map(i => `${i.id}: ${i.keywords.join('/')}`).join('\n');
 
   const systemPrompt = `
 # Role: Lemeone-lab 首席需求分析师 (Cortex Scanner)
@@ -58,16 +61,19 @@ export async function scanSeed(history: string[], currentDraft: string): Promise
 - 系统必须严格依靠 **Chain of Thought (思维链)** 抽丝剥茧。
 - 对于确实缺失信息的维度，赋予【行业均值】作为 $\\mu$，并赋予巨大的 $\\sigma$ (如0.8)。
 
+## 行业锁定协议 (Industry Gravity Engine)
+- **【语义对齐】**: 必须从以下行业列表中选择一个最契合的 ID (selected_industry_id):
+${industryListStr}
+
 ## 智能结构化追问 (Smart Probing 2.0)
-- **【强制限制】**: 每一轮只能提出 **最多 2 个** 问题。
-- **【选项化思维】**: 尽量将开放式问题转化为 \`choice\` 类型。例如：
-  - D5 (准入): [免安装网页端, 浏览器插件, 移动 App, 需内网部署]
-  - D6 (变现): [按使用付费, 订阅制, 硬件+服务捆绑, 完全免费]
-- **【格式要求】**: 问题必须包含 id (如 q_d5_1), dimension (如 D5), text, type (choice/text/yesno), 以及 options (如果有)。
+- **【强制限制】**: 每一轮只能提出 **最多 1 个** 问题。
+- **【强制审查维度】**: 必须重点审查 D5 (准入门槛)、D6 (变现模式) 和 D14 (认知与分发)。如果用户未在对话历史中明确提及具体方案，**禁止智能推断**，必须通过 \`questions\` 字段发起询问。
+- **【选项化思维】**: 尽量将开放式问题转化为 'choice' 类型。
+- **【格式要求】**: 问题必须包含 id (如 q_d5_1), dimension (如 D5), text, type ('choice/text/yesno'), 以及 options (如果有)。
 
 ## 核心交互准则 (Gemini CLI Prompt 3.0)
 - **拒绝废话**: 采用犀利、数据导向的“黑客终端”语气。
-- **渐进引导**: 只有当核心维度的 $\\sigma > 0.6$ 且无法智能推断时，才触发追问。
+- **渐进引导**: 只要任何维度的 $\sigma > 0.4$ 且缺乏直接用户证据，就必须触发追问。
 
 ## Output Format (Strict JSON Only!!!):
 严格合法的 JSON 对象。
@@ -96,6 +102,7 @@ export async function scanSeed(history: string[], currentDraft: string): Promise
   "isComplete": boolean,
   "draftContent": "[Markdown PRD]"
 }
+
 `.trim()
 
   try {
@@ -127,7 +134,10 @@ export async function scanSeed(history: string[], currentDraft: string): Promise
         const out = Array(len).fill(0).map((_, i) => defFn(i));
         if (Array.isArray(arr)) {
             for (let i = 0; i < Math.min(arr.length, len); i++) {
-                if (typeof arr[i] === 'number') out[i] = arr[i];
+                const val = arr[i];
+                if (typeof val === 'number' && !isNaN(val)) {
+                    out[i] = val;
+                }
             }
         }
         return out;
@@ -141,15 +151,35 @@ export async function scanSeed(history: string[], currentDraft: string): Promise
       evidences: parsed.seed?.evidences || {}
     }
 
-    const industryCtx = loadIndustryProfile(history.join('\n'))
+    // --- CODE-LEVEL AUDIT LAYER (Hard-coded Integrity Check) ---
+    // If any dimension has std > 0.4, it's considered "Ambiguous".
+    // We force isComplete to false if the AI is being too "confident" without evidence.
+    let forceIncomplete = false;
+    const highUncertaintyDims = [];
+    for (let i = 0; i < 14; i++) {
+        if (seed.std[i] > 0.4) {
+            forceIncomplete = true;
+            highUncertaintyDims.push(`D${i + 1}`);
+        }
+    }
+
+    const finalIsComplete = parsed.isComplete && !forceIncomplete;
+    
+    // If AI failed to provide a question for a high-uncertainty dimension, we force it in terminal output
+    let terminalOutput = parsed.terminalOutput || "[ERROR] Failed to parse Cortex response.";
+    if (forceIncomplete && (!parsed.questions || parsed.questions.length === 0)) {
+        terminalOutput += `\n\n\x1b[33m[SYS_AUDIT] 检测到逻辑断裂带: ${highUncertaintyDims.join(', ')} 信息不足。正在生成定向追问...\x1b[0m`;
+    }
 
     return {
+      selected_industry_id: parsed.selected_industry_id,
+      monetization: parsed.monetization || { model: 'SUBSCRIPTION', hardware_price: 0, monthly_fee: 45 },
       reasoning_chain: parsed.reasoning_chain || [],
       seed,
       industryCtx,
-      terminalOutput: parsed.terminalOutput || "[ERROR] Failed to parse Cortex response.",
-      questions: (parsed.questions || []).slice(0, 2), // Enforce 2 question limit
-      isComplete: !!parsed.isComplete,
+      terminalOutput,
+      questions: (parsed.questions || []).slice(0, 1), // Enforce 1 question limit
+      isComplete: finalIsComplete,
       draftContent: parsed.draftContent || currentDraft
     }
   } catch (error: any) {

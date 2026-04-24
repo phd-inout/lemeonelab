@@ -243,26 +243,42 @@ export default function TerminalUI() {
                     print(`${C.green}[✓ OK] 成功设定客单价为: $${pValue}/月${C.reset}`)
                 }
                 break
-            case 'audit':
-                print(`${C.magenta}[ALIGNMENT] 启动战略一致性复盘...${C.reset}`)
-                await audit()
-                break
-case 'stat':
-                const s = useLemeoneStore.getState().sandboxState
-                if (!s) {
+            case 'stat': {
+                const sState = useLemeoneStore.getState().sandboxState
+                if (!sState) {
                     print(`${C.gray}Simulation not initialized.${C.reset}`)
                 } else {
-                    print(`\n${C.cyan}╔═ PRODUCT VECTOR (14D) ══════════════════╗${C.reset}`)
-                    print(`${C.cyan}║${C.reset}  RESOLUTION: ${C.bold}${s.tier}${C.reset} (${s.agents.length.toLocaleString()} Agents) - EPOCH: ${C.bold}T+${s.epoch}${C.reset}`)
-                    print(`${C.cyan}║${C.reset}  D1-D4 [CORE]: P:${s.productVector[0].toFixed(3)} D:${s.productVector[1].toFixed(3)} I:${s.productVector[2].toFixed(3)} S:${s.productVector[3].toFixed(3)}`)
-                    print(`${C.cyan}║${C.reset}  D5-D6 [GATE]: ENTRY:${s.productVector[4].toFixed(3)} MONETIZE:${s.productVector[5].toFixed(3)}`)
-                    print(`${C.cyan}║${C.reset}  D7-D9 [MKT]:  U:${s.productVector[6].toFixed(3)} S:${s.productVector[7].toFixed(3)} C:${s.productVector[8].toFixed(3)}`)
-                    print(`${C.cyan}║${C.reset}  D10-D13[STR]: E:${s.productVector[9].toFixed(3)} B:${s.productVector[10].toFixed(3)} G:${s.productVector[11].toFixed(3)} C:${s.productVector[12].toFixed(3)}`)
-                    print(`${C.cyan}║${C.reset}  D14   [GTM]:  AWARENESS:${s.productVector[13].toFixed(3)}`)
-                    print(`${C.cyan}╚═════════════════════════════════════════╝${C.reset}`)
-                    print(`${C.yellow}TEAM_SIZE: ${s.teamSize}  SURVIVAL_RATE: ${(s.metrics.survivalRate*100).toFixed(1)}%  EARNING_POTENTIAL: ${s.metrics.earningPotential}${C.reset}`)
+                    const v = (idx: number) => (sState.productVector[idx] ?? 0).toFixed(3);
+                    const isBuyout = sState.monetization.model === 'ONE_TIME';
+                    const isHybrid = sState.monetization.model === 'HYBRID';
+                    
+                    print(`\n${C.cyan}╔═ PRODUCT DNA RADAR (14D) ══════════════════════════╗${C.reset}`)
+                    print(`${C.cyan}║${C.reset}  RESOLUTION: ${C.bold}${sState.tier}${C.reset} (${sState.agents.length.toLocaleString()} Agents) - EPOCH: ${C.bold}T+${sState.epoch}${C.reset}`)
+                    
+                    const bar = (val: number) => '█'.repeat(Math.floor(val * 10)).padEnd(10, '░');
+                    print(`${C.cyan}║${C.reset}  [CORE] P:${v(0)} ${C.blue}${bar(sState.productVector[0])}${C.reset} D:${v(1)} ${C.blue}${bar(sState.productVector[1])}${C.reset}`)
+                    print(`${C.cyan}║${C.reset}  [GATE] E:${v(4)} ${C.magenta}${bar(sState.productVector[4])}${C.reset} M:${v(5)} ${C.magenta}${bar(sState.productVector[5])}${C.reset}`)
+                    print(`${C.cyan}║${C.reset}  [MKT ] U:${v(6)} ${C.green}${bar(sState.productVector[6])}${C.reset} S:${v(7)} ${C.green}${bar(sState.productVector[7])}${C.reset}`)
+                    print(`${C.cyan}║${C.reset}  [GTM ] A:${v(13)} ${C.yellow}${bar(sState.productVector[13])}${C.reset}`)
+                    
+                    print(`${C.cyan}╠═ REVENUE PERFORMANCE ══════════════════════════════╣${C.reset}`)
+                    const mrrFormatted = sState.metrics.mrr.toLocaleString();
+                    if (isBuyout) {
+                        print(`${C.cyan}║${C.reset}  MODE: ${C.bold}[📦 ONE-TIME BUYOUT]${C.reset}  UNIT_PRICE: $${sState.monetization.hardwarePrice}`)
+                        print(`${C.cyan}║${C.reset}  REVENUE (THIS EPOCH): ${C.green}${C.bold}$${mrrFormatted}${C.reset}`)
+                    } else if (isHybrid) {
+                        print(`${C.cyan}║${C.reset}  MODE: ${C.bold}[🧬 HYBRID MODEL]${C.reset} HW: $${sState.monetization.hardwarePrice} | SUB: $${sState.monetization.monthlyFee}`)
+                        print(`${C.cyan}║${C.reset}  TOTAL REVENUE: ${C.green}${C.bold}$${mrrFormatted}${C.reset}`)
+                    } else {
+                        print(`${C.cyan}║${C.reset}  MODE: [🔁 SUBSCRIPTION]  ARPU: $${sState.monetization.monthlyFee}`)
+                        print(`${C.cyan}║${C.reset}  MRR: ${C.green}${C.bold}$${mrrFormatted}${C.reset}`)
+                    }
+
+                    print(`${C.cyan}╚════════════════════════════════════════════════════╝${C.reset}`)
+                    print(`${C.yellow}TEAM: ${sState.teamSize}  SURVIVAL: ${(sState.metrics.survivalRate*100).toFixed(1)}%  PAID_USERS: ${sState.metrics.earningPotential}${C.reset}`)
                 }
                 break
+            }
             case 'reset':
                 reset()
                 term.clear()

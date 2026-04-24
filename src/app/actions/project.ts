@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { prisma } from '@/lib/prisma';
 import { ProjectData, SandboxState } from '@/lib/engine/types';
+import { syncUserWithPrisma } from '@/lib/auth-sync';
 
 /**
  * Creates a new Project for the user.
@@ -13,15 +14,7 @@ export async function createProjectAction(name: string, description?: string): P
         const { data: { user } } = await supabase.auth.getUser();
 
         if (user) {
-            await prisma.user.upsert({
-                where: { id: user.id },
-                update: { email: user.email! },
-                create: {
-                    id: user.id,
-                    email: user.email!,
-                    username: user.user_metadata?.full_name || user.email?.split('@')[0],
-                }
-            });
+            await syncUserWithPrisma(user);
         }
 
         const project = await prisma.project.create({

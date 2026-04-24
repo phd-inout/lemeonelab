@@ -39,8 +39,13 @@ const ParticleManifold: React.FC = () => {
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   
   // Cache for stable agent coordinates and physics state
-  const agentCache = useRef<Array<{ x: number, y: number, vx: number, vy: number, tx: number, ty: number, isAware: boolean, isViral: boolean }>>([]);
+  const agentCache = useRef<Array<{ x: number, y: number, vx: number, vy: number, tx: number, ty: number, isAware: boolean, isPaid: boolean, isChurned: boolean }>>([]);
   const requestRef = useRef<number>(0);
+  
+  // Lifecycle Constants for Visuals
+  const ZONE_UNREACHED = 0.2; // Left side
+  const ZONE_ACTIVE = 0.5;    // Center
+  const ZONE_CHURNED = 0.8;   // Right side
   // Spatial grid for fast hover detection
   const gridRef = useRef<Map<string, number[]>>(new Map());
 
@@ -162,59 +167,64 @@ const ParticleManifold: React.FC = () => {
     const width = canvas.width;
     const height = canvas.height;
 
-    const awarenessThreshold = productVector[DIM.AWARENESS];
-    const socialLeverage = productVector[DIM.SOCIAL]; // D7
+    const awarenessThreshold = productVector[DIM.AWARENESS] || 0.1;
+    const entryEase = productVector[DIM.ENTRY] || 0.5;
+    const techDebt = sandboxState?.techDebt || 0;
     
     const needsInit = agentCache.current.length !== agents.length;
 
     if (needsInit) {
        agentCache.current = agents.map((agent, i) => {
-           // Initial position: scatter from center based on DNA, not all at the same point!
-           let dx = 0; let dy = 0;
-           for(let d=0; d<12; d++) {
-               const angle = (d / 12) * Math.PI * 2;
-               const mag = agent.vector[d] - 0.5;
-               dx += Math.cos(angle) * mag;
-               dy += Math.sin(angle) * mag;
-           }
            const getRnd = sfc32(i, i*2, i*3, i*4);
-           const tx = (width / 2) + dx * (width / 3) + (getRnd() - 0.5) * 50;
-           const ty = (height / 2) + dy * (height / 3) + (getRnd() - 0.5) * 50;
+           // Start all particles in the DARK ZONE (Left)
            return { 
-               x: tx + (Math.random() - 0.5) * 30, // Start near target, not at center
-               y: ty + (Math.random() - 0.5) * 30,
-               vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, 
-               tx, ty, 
-               isAware: false, isViral: false 
+               x: (width * 0.1) + (getRnd() - 0.5) * 100,
+               y: (height * getRnd()),
+               vx: 0, vy: 0, 
+               tx: width * 0.1, ty: height * 0.5, 
+               isAware: false, isPaid: false, isChurned: false 
            };
        });
     }
 
     agentCache.current.forEach((cache, i) => {
         const agent = agents[i];
-        if (!needsInit) {
-          // Recalculate target positions (agent DNA may have changed after collision)
-          let dx = 0; let dy = 0;
-          for(let d=0; d<12; d++) {
-              const angle = (d / 12) * Math.PI * 2;
-              const mag = agent.vector[d] - 0.5;
-              dx += Math.cos(angle) * mag;
-              dy += Math.sin(angle) * mag;
-          }
-          const getRnd = sfc32(i, i*2, i*3, i*4);
-          cache.tx = (width / 2) + dx * (width / 3) + (getRnd() - 0.5) * 50;
-          cache.ty = (height / 2) + dy * (height / 3) + (getRnd() - 0.5) * 50;
-        }
-        
-        // Update dynamic state (D13 Awareness & D7 Social Virality)
+        const res = agent.resonance || 0;
         const getRnd2 = sfc32(i*5, i*6, i*7, 1);
         const randSeed = getRnd2();
-        cache.isAware = randSeed < awarenessThreshold;
-        if (!cache.isAware && randSeed < awarenessThreshold + (socialLeverage * 0.5) && agent.resonance > 0.5) {
-            cache.isViral = true; 
+
+        // 1. Lifecycle State Machine
+        // Aware? (Awareness + Ad spending)
+        if (!cache.isAware && randSeed < awarenessThreshold) {
             cache.isAware = true;
+        }
+
+        // Paid? (Resonance + Entry Ease)
+        const pPay = 1 / (1 + Math.exp(-10 * (res - 0.4)));
+        if (cache.isAware && !cache.isPaid && randSeed < pPay * entryEase) {
+            cache.isPaid = true;
+        }
+
+        // Churned? (TechDebt + Low Resonance)
+        const pChurn = (techDebt / 100) * 0.1 + (res < 0.2 ? 0.05 : 0);
+        if (cache.isPaid && randSeed < pChurn) {
+            cache.isPaid = false;
+            cache.isChurned = true;
+        }
+
+        // 2. Target Positioning (The Funnel Field)
+        if (cache.isChurned) {
+            cache.tx = width * 0.9; // Escape to right
+            cache.ty = height * 0.8;
+        } else if (cache.isPaid) {
+            cache.tx = width * 0.5; // Orbit core
+            cache.ty = height * 0.5;
+        } else if (cache.isAware) {
+            cache.tx = width * 0.4; // Enter active zone
+            cache.ty = height * (0.3 + (randSeed * 0.4));
         } else {
-            cache.isViral = false;
+            cache.tx = width * 0.1; // Stay in dark zone
+            cache.ty = height * randSeed;
         }
     });
 
@@ -279,29 +289,32 @@ const ParticleManifold: React.FC = () => {
     agents.forEach((agent, i) => {
       const cache = agentCache.current[i];
       if (!cache) return;
-      const res = agent.resonance;
-      
+
+      const prevX = cache.x;
+      const prevY = cache.y;
+
+      // Lifecycle Physics
+      if (cache.isPaid) {
+          // Orbit around center
+          const angle = Date.now() * 0.001 + i;
+          const orbitRadius = 50 + (i % 100);
+          cache.tx = width * 0.5 + Math.cos(angle) * orbitRadius;
+          cache.ty = height * 0.5 + Math.sin(angle) * orbitRadius;
+      }
+
       // Brownian motion (subtle shimmer)
-      cache.vx += (Math.random() - 0.5) * 0.15;
-      cache.vy += (Math.random() - 0.5) * 0.15;
+      cache.vx += (Math.random() - 0.5) * 0.2;
+      cache.vy += (Math.random() - 0.5) * 0.2;
       
-      // Gravity towards target based on resonance
-      const pull = 0.01 + res * 0.03; 
+      // Funnel Flow Acceleration
+      const pull = cache.isPaid ? 0.08 : 0.02; 
       cache.vx += (cache.tx - cache.x) * pull;
       cache.vy += (cache.ty - cache.y) * pull;
 
-      // Soft boundary repulsion (keep particles inside canvas)
-      if (cache.x < 20) cache.vx += 0.5;
-      if (cache.x > width - 20) cache.vx -= 0.5;
-      if (cache.y < 20) cache.vy += 0.5;
-      if (cache.y > height - 20) cache.vy -= 0.5;
-      
       // Friction / dampening
-      cache.vx *= 0.88;
-      cache.vy *= 0.88;
+      cache.vx *= 0.85;
+      cache.vy *= 0.85;
       
-      const prevX = cache.x;
-      const prevY = cache.y;
       cache.x += cache.vx;
       cache.y += cache.vy;
 
@@ -312,41 +325,31 @@ const ParticleManifold: React.FC = () => {
       }
 
       let fillStyle = '';
-      let radius = 1.5;
-      if (cache.isAware) {
-         // Bright Particles (Reached by awareness channel)
-         let r = Math.floor(255 * Math.max(0, 1 - res * 1.5));
-         let g = Math.floor(255 * Math.min(1, res * 1.5));
-         
-         // Gentle pulse
-         const pulse = Math.sin(Date.now() / 500 + i * 0.7) * 0.15 + 0.85;
-         r = Math.floor(r * pulse);
-         g = Math.floor(g * pulse);
-         
-         fillStyle = `rgba(${r}, ${g}, 250, ${0.7 + res * 0.3})`; 
-         radius = 2.0 + res * 1.5; // High resonance = bigger dot
+      let radius = 1.2;
 
-         // Glow halo for high-resonance aware particles
-         if (res > 0.7) {
-           ctx.fillStyle = `rgba(${r}, ${g}, 250, 0.1)`;
-           ctx.beginPath();
-           ctx.arc(cache.x, cache.y, (radius * 3) / transform.scale, 0, Math.PI * 2);
-           ctx.fill();
-         }
+      if (cache.isChurned) {
+          fillStyle = `rgba(255, 160, 0, ${0.3 + Math.sin(Date.now()/200)*0.1})`; // Amber fade
+          radius = 1.0;
+      } else if (cache.isPaid) {
+          fillStyle = `rgba(0, 255, 255, 0.9)`; // Cyan Core
+          radius = 2.2;
+          // Core Glow
+          if (i % 5 === 0) {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'cyan';
+          }
+      } else if (cache.isAware) {
+          fillStyle = `rgba(0, 150, 255, 0.6)`; // Active Blue
+          radius = 1.6;
       } else {
-         // Dark Particles 
-         if (res > 0.7) {
-             fillStyle = 'rgba(120, 80, 40, 0.4)'; // High match but unaware → warm amber hint
-             radius = 1.8;
-         } else {
-             fillStyle = 'rgba(25, 25, 30, 0.35)'; // Low match, unaware
-         }
+          fillStyle = `rgba(60, 60, 70, 0.3)`; // Dark Unreached
       }
 
       ctx.fillStyle = fillStyle;
       ctx.beginPath();
       ctx.arc(cache.x, cache.y, radius / transform.scale, 0, Math.PI * 2); 
       ctx.fill();
+      ctx.shadowBlur = 0; // Reset shadow
     });
 
     // Periodically rebuild spatial grid (every ~10 frames via dirty flag)

@@ -109,6 +109,35 @@ async function runComprehensiveAudit() {
         console.log("  PASS: Simulation accurately tracks time and debt accumulation.");
     }
 
+    // --- 6. SIMULATION LEAK (CATASTROPHE PREVENTION) ---
+    console.log("\n6️⃣ [SIM_LEAK] Testing User Decay Stability (T+1 to T+5)...");
+    let leakState: SandboxState = {
+        ...state,
+        id: uuidv4(),
+        epoch: 0,
+        techDebt: 0,
+        productVector: [0.8, 0.8, 0.8, 0.8, 0.8, 0.1, 0.7, 0.5, 0.8, 0.5, 0.5, 0.5, 0.5, 0.2],
+        agents: generatePopulation({
+            mean: [0.8, 0.8, 0.8, 0.8, 0.8, 0.1, 0.7, 0.5, 0.8, 0.5, 0.5, 0.5, 0.5, 0.2],
+            std: Array(14).fill(0.1) as any,
+            weights: Array(14).fill(1.0) as any,
+            outliers: []
+        }, 10000),
+        metrics: { avgResonance: 0, conversionRate: 0, earningPotential: 0, activePaidUserCount: 0, mrr: 0, survivalRate: 1.0 }
+    };
+
+    console.log(`   Epoch | Active Users | Avg Resonance | Survival`);
+    for (let i = 1; i <= 3; i++) {
+        leakState = await stepSimulation(leakState);
+        console.log(`   T+${leakState.epoch}   | ${leakState.metrics.activePaidUserCount.toString().padEnd(12)} | ${leakState.metrics.avgResonance.toFixed(4)}      | ${(leakState.metrics.survivalRate*100).toFixed(1)}%`);
+    }
+
+    if (leakState.metrics.activePaidUserCount > 1000) {
+        console.log("  PASS: User base is stable, no catastrophic collapse detected.");
+    } else {
+        throw new Error(`FAIL: User collapse detected! T+3 users: ${leakState.metrics.activePaidUserCount}`);
+    }
+
     console.log("\n🏁 [AUDIT] COMPLETED. ALL MATHEMATICAL CHANNELS VERIFIED.");
 }
 

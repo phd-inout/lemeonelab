@@ -38,6 +38,7 @@ interface LemeoneStore {
     
     activeProjectId: string | null
     projectsList: ProjectData[]
+    fetchedPricing: { hardwarePrice?: number; monthlyFee?: number; competitor?: string } | null
 
     // Project Actions
     createProject: (name: string, description?: string) => Promise<string>
@@ -72,7 +73,17 @@ export const useLemeoneStore = create<LemeoneStore>()(
             terminalLines: [],
             activeProjectId: null,
             projectsList: [],
-            setARPU: () => {},
+            fetchedPricing: null,
+            setARPU: (price: number) => {
+                const s = get().sandboxState;
+                if (!s) return;
+                set({
+                    sandboxState: {
+                        ...s,
+                        userARPU: price
+                    }
+                });
+            },
 
             createProject: async (name: string, description?: string) => {
                 try {
@@ -175,6 +186,23 @@ export const useLemeoneStore = create<LemeoneStore>()(
                         }
                         if (news.auditor_alert) {
                             get().pushLine(`\x1b[31m\x1b[1m[⚠️ 审计警报] ${news.auditor_alert}\x1b[0m`)
+                        }
+                        if (news.real_world_pricing) {
+                            const { competitor, hardware_price, monthly_fee } = news.real_world_pricing;
+                            get().pushLine(`\x1b[33m[💰 PRICING] 捕获真实市场定价 (${competitor}): 买断价: $${hardware_price ?? 'N/A'} | 月费: $${monthly_fee ?? 'N/A'}\x1b[0m`)
+                            set({ fetchedPricing: { hardwarePrice: hardware_price || undefined, monthlyFee: monthly_fee || undefined, competitor } })
+                            
+                            const currentSandbox = get().sandboxState;
+                            if (currentSandbox) {
+                                set({ sandboxState: {
+                                    ...currentSandbox,
+                                    monetization: {
+                                        ...currentSandbox.monetization,
+                                        hardwarePrice: hardware_price ?? currentSandbox.monetization.hardwarePrice,
+                                        monthlyFee: monthly_fee ?? currentSandbox.monetization.monthlyFee
+                                    }
+                                }})
+                            }
                         }
                     } else if (news.error) {
                         get().pushLine(`\x1b[33m[🌐 RESEARCH] ${news.error}\x1b[0m`)
@@ -291,7 +319,18 @@ export const useLemeoneStore = create<LemeoneStore>()(
                 const proposal = await generateProposal(seed, newHistory.join('\n'))
                 const initialPopulation = generatePopulation(seed, limits.maxAgents)
                 const agents = await import('./engine/simulator').then(m => m.runCollisionAsync(seed.mean, 0, initialPopulation, 0))
-                const initialMetrics = calculateMetrics(agents, seed.mean, 0, 'STARTUP', 0, industryCtx?.baselineARPU || 45)
+                
+                const monetization = seed.monetization || { model: 'SUBSCRIPTION', hardwarePrice: 0, monthly_fee: industryCtx?.baselineARPU || 45 };
+                
+                const fetchedPricing = get().fetchedPricing;
+                const finalHardwarePrice = fetchedPricing?.hardwarePrice ?? (monetization as any).hardware_price ?? 0;
+                const finalMonthlyFee = fetchedPricing?.monthlyFee ?? (monetization as any).monthly_fee ?? industryCtx?.baselineARPU ?? 45;
+
+                const initialMetrics = calculateMetrics(agents, seed.mean, 0, 'STARTUP', 0, {
+                    model: (monetization as any).model || 'SUBSCRIPTION',
+                    hardwarePrice: finalHardwarePrice,
+                    monthlyFee: finalMonthlyFee
+                })
 
                 const initialState: SandboxState = {
                     id: uuidv4(),
@@ -302,7 +341,12 @@ export const useLemeoneStore = create<LemeoneStore>()(
                     techDebt: 0,
                     currentStage: 'SEED',
                     seedText: newHistory.join('\n'),
-                    userARPU: industryCtx?.baselineARPU || 45,
+                    userARPU: finalMonthlyFee,
+                    monetization: {
+                        model: (monetization as any).model || 'SUBSCRIPTION',
+                        hardwarePrice: finalHardwarePrice,
+                        monthlyFee: finalMonthlyFee
+                    },
                     industryId: industryCtx?.id || null,
                     industryName: industryCtx?.name || null,
                     industryBaselineARPU: industryCtx?.baselineARPU || 45,

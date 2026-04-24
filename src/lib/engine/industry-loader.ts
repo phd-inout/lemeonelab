@@ -45,6 +45,15 @@ export function matchIndustry(text: string): string {
   return 'ind_005_solopreneur.md'; // Fallback
 }
 
+/** Get all available industries for AI selection */
+export function getAllIndustries() {
+  return INDUSTRY_ROUTES.map(r => ({
+    id: r.file.replace('.md', ''),
+    keywords: r.keywords,
+    file: r.file
+  }));
+}
+
 /** Extract hard constraint floors from Physics Laws in the raw MD */
 function parseHardConstraints(markdown: string): { dim: string; floor: number }[] {
   const constraints: { dim: string; floor: number }[] = [];

@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@lemeone/drta-engine": "file:./packages/drta-engine",
     "@ai-sdk/google": "^3.0.43",
     "@prisma/adapter-pg": "^7.4.2",
     "@prisma/client": "^7.4.2",

@@ -31,6 +31,12 @@ export interface NewsAnalysis {
   headline: string;
   industry_impacts: MarketImpact[];
   commentary: string;
+  real_world_pricing?: {
+    competitor: string;
+    hardware_price: number | null;
+    monthly_fee: number | null;
+    evidence: string;
+  };
   auditor_alert?: string;
   error?: string;
 }
@@ -40,7 +46,7 @@ export interface NewsAnalysis {
  */
 function buildSystemPrompt(industryCtx: IndustryContext | null): string {
   const baseRole = `你现在是 Lemeone-lab 首席行业深研分析师 (Cortex Researcher)。
-你的职能是利用 Google Search 获取过去 24 小时的真实市场数据，并将其转化为对模拟器内 14D 向量空间的动态扰动值。`;
+你的职能是利用 Google Search 获取过去 24 小时的真实市场数据，并将其转化为对模拟器内 14D 向量空间的动态扰动值，同时抓取真实的竞品定价。`;
 
   if (!industryCtx) {
     // Fallback: generic research mode
@@ -50,7 +56,8 @@ function buildSystemPrompt(industryCtx: IndustryContext | null): string {
 1. 扰动值（vector_perturbation）必须严格限制在 [-0.2, +0.2] 之间。
 2. 必须针对不同行业给出影响分析。
 3. 必须通过 Google Search 获取过去 24 小时的真实数据。
-4. 返回严格的 JSON。`;
+4. 必须通过搜索获取目前市面上直接竞对的真实客单价（买断价/订阅月费）。
+5. 返回严格的 JSON。`;
   }
 
   // Industry-Aware v3.0 prompt
@@ -69,7 +76,7 @@ ${industryCtx.rawMarkdown}
 
 ### A. 定向搜索与过滤 (Targeted Search)
 - **禁止泛搜**：不要搜索"科技新闻"，必须基于以下关键词搜索行业动态：${industryCtx.keywords.join('、')}。
-- **竞对追踪**：重点关注该行业的已知巨头和新兴挑战者的最新产品发布、定价变化。
+- **竞对追踪与真实定价 (Price Grounding)**：必须搜索该行业的已知巨头和新兴挑战者的最新产品定价。提取出真实的 \`hardware_price\` (如果是买断制硬件) 和 \`monthly_fee\` (如果是订阅制)。如果只存在一种，另一种设为 null。
 - **现实锚定**：抓取真实市场中该品类用户在 Reddit, X, 开发者社区的最新痛点分布。
 
 ### B. 扰动映射与约束 (Perturbation & Gravity)
@@ -186,6 +193,15 @@ export async function fetchIndustryGroundedNews(
             }
           },
           commentary: { type: "STRING" },
+          real_world_pricing: {
+            type: "OBJECT",
+            properties: {
+              competitor: { type: "STRING" },
+              hardware_price: { type: "NUMBER", nullable: true },
+              monthly_fee: { type: "NUMBER", nullable: true },
+              evidence: { type: "STRING" }
+            }
+          },
           auditor_alert: { type: "STRING" }
         },
         required: ["headline", "industry_impacts", "commentary"]
