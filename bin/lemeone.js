@@ -53,9 +53,37 @@ function handleSkills() {
   }
 }
 
+/**
+ * Handle "hook" command
+ */
+function handleHook() {
+  const subCommand = args[1];
+  const hookPath = path.join(appDir, '.git', 'hooks', 'prepare-commit-msg');
+
+  if (subCommand === 'install') {
+    console.log('\n⚓ Installing Lemeone Strategic Git Hook...');
+    const hookContent = `#!/bin/sh\nnode "${path.join(appDir, 'scripts', 'git-hook-audit.js')}" "$1"`;
+    
+    try {
+      fs.writeFileSync(hookPath, hookContent, { mode: 0o755 });
+      console.log('✅ Git hook installed successfully at .git/hooks/prepare-commit-msg');
+      console.log('✨ Your next commit will include a strategic gravity brief!\n');
+    } catch (e) {
+      console.error(`❌ Failed to install hook: ${e.message}`);
+    }
+    process.exit(0);
+  } else {
+    console.log('\nUsage:');
+    console.log('  npx lemeone-lab hook install');
+    process.exit(1);
+  }
+}
+
 // Route commands
 if (args[0] === 'skills') {
   handleSkills();
+} else if (args[0] === 'hook') {
+  handleHook();
 } else {
   // Default: Start Server
   console.log('🚀 Starting Lemeone-lab 2.0 Local Engine...');
