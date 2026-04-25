@@ -1,9 +1,9 @@
 {
-  "name": "lemeone-lab",
+  "name": "lemeonelab",
   "version": "0.1.0",
   "private": true,
   "bin": {
-    "lemeone-lab": "./bin/lemeone.js",
+    "lemeonelab": "./bin/lemeone.js",
     "skills": "./bin/lemeone.js",
     "lemeone-mcp": "./bin/mcp-loader.js"
   },
@@ -41,6 +41,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "tsx": "^4.19.2"
   }
 }

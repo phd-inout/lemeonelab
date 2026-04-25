@@ -1,11 +1,11 @@
 ---
 title: "Terminal Command Reference"
-description: "Mastering High-Level Intervention Techniques in the Lemeone-Lab Terminal."
+description: "Mastering High-Level Intervention Techniques in the LemeoneLab Terminal."
 ---
 
 # Advanced Terminal Operations
 
-The Lemeone-Lab Command Line Interface (CLI) is your primary console for intervening in market experiments.
+The LemeoneLab Command Line Interface (CLI) is your primary console for intervening in market experiments.
 
 ## Core Simulation Commands
 - `dev`: Executes a full-scale collision for **1 Month (4 Epochs)**. Use this to observe stable trends. Each epoch processes 100,000 agent interactions.

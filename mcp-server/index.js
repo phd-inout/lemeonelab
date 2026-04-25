@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Lemeone-Lab MCP Server
+ * LemeoneLab MCP Server
  * Universal Business Gravity Engine for Claude Code, Cursor, and beyond.
  * Implements Model Context Protocol (MCP) v1.0
  */
@@ -108,7 +108,7 @@ function autoSetupHooks(projectDir) {
 
 // 5. MCP SERVER INITIALIZATION
 const server = new Server({
-    name: "lemeone-lab-engine",
+    name: "lemeonelab-engine",
     version: "2.4.0",
 }, {
     capabilities: {

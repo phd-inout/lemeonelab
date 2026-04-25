@@ -188,7 +188,7 @@ export default function Home() {
         <div className="flex gap-6 items-center">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-            <span>Node: lemeone-lab/v2.0/main</span>
+            <span>Node: lemeonelab/v2.0/main</span>
           </div>
           <span className="text-gray-700">|</span>
           <span>PID: 100,000_AGENTS_ACTIVE</span>

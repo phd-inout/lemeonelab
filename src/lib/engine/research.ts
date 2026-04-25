@@ -1,5 +1,5 @@
 /**
- * Lemeone-Lab 2.0: Industry-Aware Grounding System (Cortex Researcher)
+ * LemeoneLab 2.0: Industry-Aware Grounding System (Cortex Researcher)
  * 
  * Architecture: Gravity (Industry Knowledge) vs Weather (Real-time News)
  * - Gravity is structural, immutable physics from industry DNA profiles.
@@ -45,7 +45,7 @@ export interface NewsAnalysis {
  * Build a targeted System Prompt based on industry context (v3.0)
  */
 function buildSystemPrompt(industryCtx: IndustryContext | null): string {
-  const baseRole = `你现在是 Lemeone-lab 首席行业深研分析师 (Cortex Researcher)。
+  const baseRole = `你现在是 LemeoneLab 首席行业深研分析师 (Cortex Researcher)。
 你的职能是利用 Google Search 获取过去 24 小时的真实市场数据，并将其转化为对模拟器内 14D 向量空间的动态扰动值，同时抓取真实的竞品定价。`;
 
   if (!industryCtx) {

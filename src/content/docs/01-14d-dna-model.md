@@ -1,11 +1,11 @@
 ---
 title: "The 14D Commercial DNA Model"
-description: "How Lemeone-Lab decodes products into 14 physical dimensions to compute market gravity."
+description: "How LemeoneLab decodes products into 14 physical dimensions to compute market gravity."
 ---
 
 # The 14D Commercial DNA Model
 
-Lemeone-Lab treats startups not as business plans, but as physical entities defined by a 14-dimensional vector. Every calculation in the sandbox leverages all 14 dimensions simultaneously to simulate the complex interference patterns of a real market.
+LemeoneLab treats startups not as business plans, but as physical entities defined by a 14-dimensional vector. Every calculation in the sandbox leverages all 14 dimensions simultaneously to simulate the complex interference patterns of a real market.
 
 ## Core Dimensions (D1-D4): The Value Engine
 These dimensions dictate the raw **Resonance** (how much people want the product).
@@ -34,7 +34,7 @@ These dimensions are decoupled to simulate the "Energy Gap" between usage and re
 - **D14 (Awareness)**: The initial distribution blast on Day 1. Driven by PR, founder reputation, or algorithmic discovery.
 
 ## Reality Anchoring System (Deep Research)
-Lemeone-Lab does not operate in a vacuum.
+LemeoneLab does not operate in a vacuum.
 
 While extracting your product's DNA, our **News Parser Service** scans the live web for industry reports, competitor maneuvers, and macro-economic shifts. This data is injected into the sandbox as "Environmental Perturbations" and "Macro-Gravitational Constants."
 

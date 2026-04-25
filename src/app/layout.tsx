@@ -13,7 +13,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "lemeone-lab | Terminal Startup Simulator",
+  title: "lemeonelab | Terminal Startup Simulator",
   description: "Navigate the ruthless world of tech startups via terminal.",
 };
 

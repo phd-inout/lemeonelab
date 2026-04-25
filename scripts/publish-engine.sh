@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Lemeone-lab: DRTA Engine Publication Helper
+# LemeoneLab: DRTA Engine Publication Helper
 # This script prepares the DRTA engine for publication while protecting the source code.
 
 set -e

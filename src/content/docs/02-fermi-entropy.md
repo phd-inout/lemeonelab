@@ -1,6 +1,6 @@
 ---
 title: "The Fermi-Entropy Conversion Engine"
-description: "The pure-math physics engine that drives the Lemeone-Lab monetization simulations."
+description: "The pure-math physics engine that drives the LemeoneLab monetization simulations."
 ---
 
 # The Fermi-Entropy Conversion Engine

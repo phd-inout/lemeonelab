@@ -47,7 +47,7 @@ function handleSkills() {
     process.exit(0);
   } else {
     console.log('\nUsage:');
-    console.log('  npx lemeone-lab skills add <github-url>');
+    console.log('  npx lemeonelab skills add <github-url>');
     console.log('  npx skills add <github-url>');
     process.exit(1);
   }
@@ -74,7 +74,7 @@ function handleHook() {
     process.exit(0);
   } else {
     console.log('\nUsage:');
-    console.log('  npx lemeone-lab hook install');
+    console.log('  npx lemeonelab hook install');
     process.exit(1);
   }
 }
@@ -86,7 +86,7 @@ if (args[0] === 'skills') {
   handleHook();
 } else {
   // Default: Start Server
-  console.log('🚀 Starting Lemeone-lab 2.0 Local Engine...');
+  console.log('🚀 Starting LemeoneLab 2.0 Local Engine...');
 
   // 1. Check GOOGLE_GENERATIVE_AI_API_KEY
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
@@ -111,7 +111,7 @@ if (args[0] === 'skills') {
   // 4. Open browser after a short delay
   setTimeout(() => {
     const url = 'http://localhost:3000';
-    console.log(`\n✨ Lemeone-lab is running at ${url}\n`);
+    console.log(`\n✨ LemeoneLab is running at ${url}\n`);
     const openCmd = os.platform() === 'win32' ? 'start' : os.platform() === 'darwin' ? 'open' : 'xdg-open';
     try {
       execSync(`${openCmd} ${url}`);

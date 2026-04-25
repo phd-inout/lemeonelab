@@ -45,7 +45,7 @@ export interface CodeAuditResponse {
  */
 export async function strategicCodeAudit(evidence: ProjectEvidence): Promise<CodeAuditResponse> {
   const systemPrompt = `
-# Role: Lemeone-lab 首席战略技术审计师 (Cortex Auditor)
+# Role: LemeoneLab 首席战略技术审计师 (Cortex Auditor)
 
 ## Mission:
 基于提供的全栈代码指纹（依赖、结构、DB Schema、核心逻辑、UI 配置），执行 14D DNA 映射。你必须具备穿透技术表象看透商业护城河的能力。
@@ -106,7 +106,7 @@ export async function strategicCodeAudit(evidence: ProjectEvidence): Promise<Cod
 }
 
 /**
- * Lemeone-lab 2.0: Cortex AI Auditor & Scanner
+ * LemeoneLab 2.0: Cortex AI Auditor & Scanner
  * STRICT GEEK MODE: Optimized for size & logic.
  */
 
@@ -127,7 +127,7 @@ export async function scanSeed(history: string[], currentDraft: string): Promise
   const industryListStr = availableIndustries.map(i => `${i.id}: ${i.keywords.join('/')}`).join('\n');
 
   const systemPrompt = `
-# Role: Lemeone-lab 首席需求分析师 (Cortex Scanner)
+# Role: LemeoneLab 首席需求分析师 (Cortex Scanner)
 
 ## 设计哲学: 精确评估与无罪推定
 - 系统必须严格依靠 **Chain of Thought (思维链)** 抽丝剥茧。
@@ -285,7 +285,7 @@ export async function runAudit(state: SandboxState): Promise<Partial<SandboxStat
   const extremeFans = sortedByRes.slice(-5).reverse().map(a => ({ dna: a.vector, r: a.resonance }))
 
   const auditPrompt = `
-# Role: Lemeone-lab 首席需求分析师 (Cortex Auditor)
+# Role: LemeoneLab 首席需求分析师 (Cortex Auditor)
 
 ## Context:
 系统已完成虚拟群体碰撞。你需要基于 14 维向量提供一份具备“预测性执行”能力的实战报告。

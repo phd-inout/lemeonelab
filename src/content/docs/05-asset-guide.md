@@ -18,7 +18,7 @@ A high-priority requirement list "voted" on by the collective intelligence of 10
 - **Side-Effect Warnings**: The most critical section. It predicts the chain reactions of your adjustments. *Example: "Lowering Entry Ease (improving D5) will increase short-term survival but introduce low-quality agents, diluting long-term Conversion (D6)."*
 
 ## 3. THE SCIENTIFIC TECHDEBT MODEL
-TechDebt in Lemeone-Lab is not a random number. It is calculated through a rigorous scientific function:
+TechDebt in LemeoneLab is not a random number. It is calculated through a rigorous scientific function:
 - **Industry Lambda ($\lambda$)**: The base decay rate of your industry's technology.
 - **Product Complexity**: Derived from the density and inter-connectivity of your 14D vector.
 - **Coordination Tax**: An exponential friction coefficient based on team size and communication overhead.

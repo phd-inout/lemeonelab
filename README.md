@@ -1,9 +1,9 @@
-# Lemeone-Lab 2.0: Business Gravity Sandbox (Scientific Edition)
+# LemeoneLab 2.0: Business Gravity Sandbox (Scientific Edition)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![NPM Version](https://img.shields.io/badge/npm-lemeone--lab-blue)](https://www.npmjs.com/package/lemeone-lab)
+[![NPM Version](https://img.shields.io/badge/npm-lemeonelab-blue)](https://www.npmjs.com/package/lemeonelab)
 
-**Lemeone-Lab 2.0** is a universal commercial decision support system based on emergent swarm intelligence and 14D vector collisions. It performs deterministic risk audits on business logic across all major AI interfaces.
+**LemeoneLab 2.0** is a universal commercial decision support system based on emergent swarm intelligence and 14D vector collisions. It performs deterministic risk audits on business logic across all major AI interfaces.
 
 Optimized for professional product managers and strategic researchers.
 
@@ -21,8 +21,8 @@ Optimized for professional product managers and strategic researchers.
 ### Option A: Web Dashboard (Full Experience)
 Best for visualizing 14D particle manifolds and complex growth curves.
 ```bash
-git clone https://github.com/phd-inout/lemeone-lab.git
-cd lemeone-lab && npm install
+git clone https://github.com/phd-inout/lemeonelab.git
+cd lemeonelab && npm install
 export GOOGLE_GENERATIVE_AI_API_KEY="your_key"
 npx prisma db push && npm run dev
 ```
@@ -34,7 +34,7 @@ For terminal-first power users. Performs 14D audits and manages industry skills 
 npx skills add https://github.com/phd-inout/business-intelligence-skill
 
 # Start the dashboard and engine
-npx lemeone-lab
+npx lemeonelab
 ```
 
 ### Option C: MCP Server (Strategic Edition)
@@ -48,9 +48,9 @@ Compatible with **Claude Code**, **Cursor**, **Windsurf**, and **Zed**.
 **Setup for Claude Code/Desktop:**
 ```json
 "mcpServers": {
-  "lemeone-lab": {
+  "lemeonelab": {
     "command": "npx",
-    "args": ["-y", "-p", "lemeone-lab", "lemeone-mcp"]
+    "args": ["-y", "-p", "lemeonelab", "lemeone-mcp"]
   }
 }
 ```
@@ -86,4 +86,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-**Lemeone-Lab** is designed to stress-test business logic before writing a single line of code. Built for the era of AI-native software engineering.
+**LemeoneLab** is designed to stress-test business logic before writing a single line of code. Built for the era of AI-native software engineering.

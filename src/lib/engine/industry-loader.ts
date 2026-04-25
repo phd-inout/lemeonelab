@@ -1,5 +1,5 @@
 /**
- * Lemeone-lab 2.0: Shared Industry Knowledge Loader
+ * LemeoneLab 2.0: Shared Industry Knowledge Loader
  * Provides unified industry detection & profile loading for both
  * Cortex Scanner (Gravity) and Research System (Weather).
  */

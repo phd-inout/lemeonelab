@@ -5,7 +5,7 @@ description: "Initiate your 14D DNA extraction via the Cortex Seed Harvesting Pr
 
 # How to Start Your Test
 
-At Lemeone-Lab, you don't need a polished PRD or a perfect business plan to begin. We have integrated the **Cortex Interviewer**, a conversational guidance engine that interrogates your logic like a seasoned venture capitalist.
+At LemeoneLab, you don't need a polished PRD or a perfect business plan to begin. We have integrated the **Cortex Interviewer**, a conversational guidance engine that interrogates your logic like a seasoned venture capitalist.
 
 ## The Three-Phase Protocol
 

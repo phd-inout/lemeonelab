@@ -1,5 +1,5 @@
 /**
- * Lemeone-lab 2.0: Core DNA & Vector Types
+ * LemeoneLab 2.0: Core DNA & Vector Types
  */
 
 // 14-D Normalized Vector (0.0 - 1.0)

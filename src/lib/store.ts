@@ -151,7 +151,7 @@ export const useLemeoneStore = create<LemeoneStore>()(
                 const tier = requestedTier || get().userTier
                 const limits = TIER_LIMITS[tier]
                 
-                get().pushLine(`\x1b[36m\x1b[1m╔═ [LEMEONE-LAB 2.0] 初始化协议启动 ═══════════════════════╗\x1b[0m`)
+                get().pushLine(`\x1b[36m\x1b[1m╔═ [LEMEONELAB 2.0] 初始化协议启动 ═══════════════════════╗\x1b[0m`)
                 get().pushLine(`\x1b[36m║\x1b[0m  \x1b[90m输入摘要:\x1b[0m "${seedText.substring(0, 60)}${seedText.length > 60 ? '...' : ''}"`) 
                 get().pushLine(`\x1b[36m║\x1b[0m  \x1b[90m分辨率:\x1b[0m   ${tier} (${limits.maxAgents.toLocaleString()} Agents)`)
                 // Phase 1: Industry Lock-on
